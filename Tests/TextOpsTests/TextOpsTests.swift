@@ -196,6 +196,23 @@ final class TextOpsTests: XCTestCase {
         XCTAssertEqual(TextLines.detectEnding("no terminator"), .lf)
     }
 
+    func testOneStrayCRDoesNotRewriteAnLFDocument() {
+        // detectEnding used to take the FIRST terminator, so a single stray CR (or one pasted
+        // CRLF) made every Edit > Lines command silently convert every line ending in the file.
+        XCTAssertEqual(TextLines.detectEnding("a\r\nb\nc\nd\ne\n"), .lf)
+        XCTAssertEqual(TextLines.detectEnding("a\rb\nc\nd\n"), .lf)
+        // A genuinely CRLF document still reports CRLF.
+        XCTAssertEqual(TextLines.detectEnding("a\r\nb\r\nc\n"), .crlf)
+        XCTAssertEqual(TextLines.detectEnding("a\rb\rc\r"), .cr)
+    }
+
+    func testTransformCanBeGivenTheDocumentsTerminator() {
+        // Transforming a SLICE: the block has no terminator of its own, so detecting from it
+        // would re-join with LF and convert those lines in a CRLF file.
+        XCTAssertEqual(TextLines.transform("b", using: .crlf) { LineOps.sort($0) }, "b")
+        XCTAssertEqual(TextLines.transform("b\na", using: .crlf) { LineOps.sort($0) }, "a\r\nb")
+    }
+
     func testTransformPreservesCRLF() {
         let result = TextLines.transform("b\r\na") { LineOps.sort($0) }
         XCTAssertEqual(result, "a\r\nb")

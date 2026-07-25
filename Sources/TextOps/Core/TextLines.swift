@@ -17,16 +17,32 @@ import Foundation
 /// the way out.
 public enum TextLines {
 
-    /// The line terminator `text` uses.
+    /// The line terminator `text` predominantly uses.
     ///
-    /// The first terminator found wins: a text containing `\r\n` reports ``LineEnding/crlf`` even
-    /// when bare `\n` appears elsewhere. A text with no terminator at all reports ``LineEnding/lf``.
+    /// Counts them rather than taking the first match. A single stray CR — or one CRLF pasted
+    /// into an otherwise LF file — would otherwise decide the whole document's terminator, and
+    /// every Edit ▸ Lines command would silently rewrite every line ending in the file.
+    /// A text with no terminator at all reports ``LineEnding/lf``.
     ///
     /// - Parameter text: The text to inspect.
     /// - Returns: The detected terminator.
     public static func detectEnding(_ text: String) -> LineEnding {
-        if text.contains("\r\n") { return .crlf }
-        if text.contains("\r") { return .cr }
+        var crlf = 0, cr = 0, lf = 0
+        var previousWasCR = false
+        for character in text.unicodeScalars {
+            switch character {
+            case "\r":
+                if previousWasCR { cr += 1 }
+                previousWasCR = true
+            case "\n":
+                if previousWasCR { crlf += 1; previousWasCR = false } else { lf += 1 }
+            default:
+                if previousWasCR { cr += 1; previousWasCR = false }
+            }
+        }
+        if previousWasCR { cr += 1 }
+        if crlf >= lf && crlf >= cr && crlf > 0 { return .crlf }
+        if cr > lf && cr > crlf { return .cr }
         return .lf
     }
 
@@ -62,11 +78,17 @@ public enum TextLines {
     /// terminator the input used.
     ///
     /// - Parameters:
-    ///   - text: The whole text to transform.
+    ///   - text: The text to transform.
+    ///   - ending: The terminator to re-join with. Omit to detect it from `text` — pass the
+    ///     document's own terminator when `text` is only a slice of it.
     ///   - body: The line transform to apply.
     /// - Returns: The transformed text.
-    public static func transform(_ text: String, _ body: ([String]) -> [String]) -> String {
-        let ending = detectEnding(text)
+    public static func transform(_ text: String, using ending: LineEnding? = nil,
+                                 _ body: ([String]) -> [String]) -> String {
+        // The caller may know the DOCUMENT's terminator even when transforming a slice of it.
+        // Detecting from the slice alone means a selected block containing no terminator always
+        // re-joins with LF, silently converting those lines in a CRLF file.
+        let ending = ending ?? detectEnding(text)
         var lines = split(text)
 
         // `split` reports a trailing newline as a final empty element. Hold it back so operations
