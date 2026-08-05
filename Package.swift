@@ -14,7 +14,8 @@ let package = Package(
         .library(name: "TextOps", targets: ["TextOps"]),
     ],
     targets: [
-        .target(name: "TextOps", path: "Sources"),
+        .target(name: "TextOps", path: "Sources",
+                swiftSettings: [.unsafeFlags(["-strict-concurrency=complete"])]),
         .testTarget(name: "TextOpsTests", dependencies: ["TextOps"], path: "Tests"),
     ]
 )
