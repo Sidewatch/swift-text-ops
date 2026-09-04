@@ -13,6 +13,7 @@ Dependency-free line transforms for a text editor — sort, dedupe, clean, join/
 - 🅰️ **Case** — lower, upper, title
 - 🔀 **Transpose** — rows to columns on any delimiter; ragged rows pad to rectangular, so it round-trips when applied twice
 - 📄 **Round-trip safe** — `TextLines.transform(_:_:)` detects CRLF / CR / LF, hides the empty element a trailing newline produces so a sort can't drag it into the middle of the file, and restores both
+- ⌨️ **Auto-close** — `AutoClose.decide(typed:in:at:allowQuotes:)`: the bracket/quote pairing decision an editor applies (pair, wrap, step over, pass through) and `deletesPair` for Backspace; pure, every rule pinned by tests
 - 🪶 **Zero dependencies** — Foundation only
 - 🍎 **Cross-platform** — iOS, macOS, tvOS, watchOS, visionOS
 
