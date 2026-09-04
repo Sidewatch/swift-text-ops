@@ -51,4 +51,11 @@ public enum WholeWord {
         let trailing = isWordCharacter(query.last) ? "\\b" : ""
         return leading + escaped + trailing
     }
+
+    /// Every whole-word match of `word` in `ns`, left to right, non-overlapping — via
+    /// `pattern(for:)`, so a non-word needle (`==`) still finds itself. Empty for an empty word.
+    public static func matches(of word: String, in ns: NSString) -> [NSRange] {
+        guard let pattern = pattern(for: word), let re = try? NSRegularExpression(pattern: pattern) else { return [] }
+        return re.matches(in: ns as String, range: NSRange(location: 0, length: ns.length)).map(\.range)
+    }
 }
