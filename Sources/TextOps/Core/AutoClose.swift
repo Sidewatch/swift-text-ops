@@ -1,3 +1,13 @@
+//
+//  AutoClose.swift
+//  TextOps
+//
+//  The auto-close decision for one typed character — pure, so an editor can pin every rule
+//  without a text view.
+//
+//  Created by David Sherlock on 9/5/26.
+//
+
 import Foundation
 
 /// The auto-close decision for one typed character — pure, so an editor can pin every rule
