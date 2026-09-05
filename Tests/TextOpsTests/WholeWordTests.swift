@@ -2,12 +2,17 @@
 //  WholeWordTests.swift
 //  Tests for TextOps.WholeWord
 //
+//  Tests for `WholeWord.pattern`: a whole-word query is anchored at both ends and a regex query
+//  is wrapped, not escaped.
+//
 //  Created by David Sherlock on 8/5/26.
 //
 
 import XCTest
 @testable import TextOps
 
+/// Tests for `WholeWord.pattern`: a whole-word query is anchored at both ends and a regex query
+/// is wrapped, not escaped.
 final class WholeWordTests: XCTestCase {
 
     private func matches(_ query: String, in text: String, isRegex: Bool = false) -> Int {

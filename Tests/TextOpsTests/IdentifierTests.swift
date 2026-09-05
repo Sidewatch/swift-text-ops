@@ -2,7 +2,8 @@
 //  IdentifierTests.swift
 //  TextOpsTests
 //
-//  Tests for Identifier.
+//  Tests for `Identifier.range(at:in:)`: the whole word from any of its units, nil off a word
+//  and past the end.
 //
 //  Created by David Sherlock on 9/5/26.
 //
@@ -10,6 +11,8 @@
 import XCTest
 @testable import TextOps
 
+/// Tests for `Identifier.range(at:in:)`: the whole word from any of its units, nil off a word
+/// and past the end.
 final class IdentifierTests: XCTestCase {
 
     func testRangeCoversTheWholeWordFromAnyOfItsUnits() {

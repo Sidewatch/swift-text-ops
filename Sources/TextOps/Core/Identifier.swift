@@ -2,8 +2,9 @@
 //  Identifier.swift
 //  TextOps
 //
-//  Identifier-style word ranges in UTF-16 text: letters, digits, `_` and `$` — the set a
-//  hover, a completion prefix and a select-word all agree on.
+//  Identifier-style words (alphanumerics, `_`, `$`) located by UTF-16 offset.
+//
+//  Created by David Sherlock on 9/5/26.
 //
 
 import Foundation
