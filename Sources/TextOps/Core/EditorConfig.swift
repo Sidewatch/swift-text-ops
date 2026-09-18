@@ -97,8 +97,12 @@ public enum EditorConfig {
         var inPreamble = true
         let relative = relativePath(of: file, under: base)
 
-        for rawLine in text.split(separator: "\n", omittingEmptySubsequences: false) {
-            let line = rawLine.trimmingCharacters(in: .whitespaces)
+        // Split on `isNewline`, never on the Character `"\n"`: in Swift `"\r\n"` is ONE Character,
+        // so `split(separator: "\n")` never divided a file authored on Windows at all — the whole
+        // file was one "line", no section header was ever seen, and it was silently ignored
+        // (18 Sep 2026). The trim is `.whitespacesAndNewlines` for the same reason.
+        for rawLine in text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline) {
+            let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
             if line.isEmpty || line.hasPrefix("#") || line.hasPrefix(";") { continue }
 
             if line.hasPrefix("[") && line.hasSuffix("]") {
@@ -159,17 +163,22 @@ public enum EditorConfig {
     /// Whether an `.editorconfig` section pattern matches a path relative to that file.
     ///
     /// Implements the glob subset the format actually uses: `*` (within a path segment), `**`
-    /// (across segments), `?`, character classes, and `{a,b}` alternation. A pattern with no
-    /// slash matches the file's NAME at any depth, which is what makes `[*.swift]` mean what
-    /// everyone expects.
+    /// (across segments; `/**/` also matches a single `/`), `?`, character classes, and `{a,b}`
+    /// alternation. A pattern with no slash matches the file's NAME at any depth, which is what
+    /// makes `[*.swift]` mean what everyone expects.
     static func matches(pattern: String, path: String) -> Bool {
         var patterns = [pattern]
         if let expanded = expandBraces(pattern) { patterns = expanded }
         let name = path.split(separator: "/").last.map(String.init) ?? path
         for p in patterns {
-            let subject = p.contains("/") ? path : name
+            // The reference cores (editorconfig-core-c, -py) join a slash-bearing pattern onto the
+            // `.editorconfig`'s own directory and match the whole path, which is what lets `/**/`
+            // stand for zero directories at the START of a pattern too (`**/x` covers a top-level
+            // `x`). Giving both the subject and the pattern a leading slash has the same effect.
             let anchored = p.hasPrefix("/") ? String(p.dropFirst()) : p
-            if regex(for: anchored).map({ subject.wholeMatch(of: $0) != nil }) == true { return true }
+            let subject = p.contains("/") ? "/" + path : name
+            let glob = p.contains("/") ? "/" + anchored : anchored
+            if regex(for: glob).map({ subject.wholeMatch(of: $0) != nil }) == true { return true }
         }
         return false
     }
@@ -200,6 +209,16 @@ public enum EditorConfig {
                 out += "[^/]*"
             case "?":
                 out += "[^/]"
+            case "/":
+                // `/**/` is "a slash, or a slash, anything, a slash" — the reference cores'
+                // translation, so `Sources/**/*.swift` covers `Sources/c.swift` as well as
+                // `Sources/A/B/c.swift`. A bare `**` elsewhere still crosses separators.
+                if i + 3 < chars.count, chars[i + 1] == "*", chars[i + 2] == "*", chars[i + 3] == "/" {
+                    out += "(?:/|/.*/)"
+                    i += 4
+                    continue
+                }
+                out += "/"
             case "[":
                 guard let close = chars[i...].firstIndex(of: "]"), close > i + 1 else { out += "\\["; break }
                 var cls = String(chars[(i + 1)...(close - 1)])

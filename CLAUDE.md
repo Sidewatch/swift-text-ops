@@ -8,7 +8,7 @@ Dependency-free line transforms for a text editor — sort, dedupe, clean, join/
 
 ## Module map
 
-- `Core/` — the engine: AutoClose, LineOps, TextLines, TextStats, WholeWord, Identifier
+- `Core/` — the engine: AutoClose, LineOps, TextLines, TextStats, WholeWord, Identifier, EditorConfig (`.editorconfig` resolution: walk-up, `root`, nearest-wins, the reference cores' globs)
 - `Enums/` — enums with no behaviour beyond their cases and labels: LetterCase, LineEnding, SortKey
 
 ## Rules

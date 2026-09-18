@@ -169,4 +169,30 @@ final class EditorConfigTests: XCTestCase {
         let resolved = EditorConfig.settings(for: scratch.appendingPathComponent("lonely.swift"))
         XCTAssertTrue(resolved.isEmpty)
     }
+
+    // MARK: - Logic review, 18 Sep 2026
+
+    func testACRLFFileIsReadLikeAnLFOne() throws {
+        // An `.editorconfig` authored on Windows ends every line in CRLF. In Swift `"\r\n"` is ONE
+        // Character, so a `split(separator: "\n")` never divided the file into lines: no section
+        // header was ever seen, the whole file was silently ignored and the editor fell back to
+        // its own preference.
+        try write("root = true\r\n\r\n[*]\r\nindent_style = space\r\nindent_size = 3\r\n", at: "")
+        let resolved = EditorConfig.settings(for: scratch.appendingPathComponent("a.swift"))
+        XCTAssertEqual(resolved.useSpaces, true)
+        XCTAssertEqual(resolved.indentWidth, 3)
+    }
+
+    func testDoubleStarBetweenSlashesMatchesZeroDirectoriesToo() {
+        // Both reference cores (editorconfig-core-c `ec_glob.c`, editorconfig-core-py
+        // `fnmatch.py`) translate `/**/` to "a slash, or a slash, anything, a slash", so
+        // `Sources/**/*.swift` covers `Sources/c.swift` and `**/x` covers a top-level `x`.
+        XCTAssertTrue(EditorConfig.matches(pattern: "Sources/**/*.swift", path: "Sources/c.swift"))
+        XCTAssertTrue(EditorConfig.matches(pattern: "Sources/**/*.swift", path: "Sources/A/B/c.swift"))
+        XCTAssertTrue(EditorConfig.matches(pattern: "**/c.swift", path: "c.swift"), "a leading **/ matches the top level")
+        XCTAssertTrue(EditorConfig.matches(pattern: "**/c.swift", path: "A/c.swift"))
+        XCTAssertFalse(EditorConfig.matches(pattern: "Sources/**/*.swift", path: "Other/c.swift"))
+        XCTAssertFalse(EditorConfig.matches(pattern: "Sources/*.swift", path: "Sources/A/c.swift"),
+                       "a single star still stops at a slash")
+    }
 }
