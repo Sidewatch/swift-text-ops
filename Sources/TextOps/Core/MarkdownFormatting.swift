@@ -33,7 +33,9 @@ public enum MarkdownFormatting {
     public struct Context: Equatable, Sendable {
         public var inline: Set<Inline>
         public var block: Block?
-        public init(inline: Set<Inline> = [], block: Block? = nil) { self.inline = inline; self.block = block }
+        /// Whether the line is a row of a pipe table (`table(in:selection:)` finds one).
+        public var table: Bool
+        public init(inline: Set<Inline> = [], block: Block? = nil, table: Bool = false) { self.inline = inline; self.block = block; self.table = table }
     }
 
     /// One replacement and where the selection lands afterwards. UTF-16 ranges, the editor's own.
@@ -180,6 +182,7 @@ public enum MarkdownFormatting {
         else if let parts = listParts(line) {
             switch parts.kind { case .task: context.block = .tasks; case .number: context.block = .numbers; default: context.block = .bullets }
         } else if quoteParts(line) != nil { context.block = .quote }
+        context.table = context.block != .codeBlock && table(in: text, selection: sel) != nil
         return context
     }
 
@@ -253,10 +256,10 @@ public enum MarkdownFormatting {
         return re.stringByReplacingMatches(in: row, range: NSRange(location: 0, length: (row as NSString).length), withTemplate: "")
     }
 
-    private static func isBlank(_ s: String) -> Bool { s.trimmingCharacters(in: .whitespaces).isEmpty }
+    static func isBlank(_ s: String) -> Bool { s.trimmingCharacters(in: .whitespaces).isEmpty }
     private static func leadingSpace(_ s: String) -> String { String(s.prefix { $0 == " " || $0 == "\t" }) }
 
-    private static func clamp(_ r: NSRange, to ns: NSString) -> NSRange {
+    static func clamp(_ r: NSRange, to ns: NSString) -> NSRange {
         let loc = min(max(0, r.location), ns.length)
         return NSRange(location: loc, length: min(r.length, ns.length - loc))
     }
