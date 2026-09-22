@@ -56,7 +56,9 @@ extension MarkdownFormatting {
         while first > 0, isTableLine(lines[first - 1]) { first -= 1 }
         while last + 1 < lines.count, isTableLine(lines[last + 1]) { last += 1 }
         guard last > first, let alignments = separatorAlignments(lines[first + 1]) else { return nil }
-        var rows = ([lines[first]] + lines[(first + 2)...last]).map(cells)
+        // A half-open range: a header-only table (header + separator, what Delete Row leaves) has
+        // no body lines, and `(first + 2)...last` would be an invalid closed range there.
+        var rows = ([lines[first]] + lines[(first + 2)..<(last + 1)]).map(cells)
         let columns = max(alignments.count, rows.map(\.count).max() ?? 0)
         rows = rows.map { $0 + Array(repeating: "", count: columns - $0.count) }
         let fullAlignments = alignments + Array(repeating: .none, count: columns - alignments.count)

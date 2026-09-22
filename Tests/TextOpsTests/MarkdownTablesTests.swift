@@ -85,6 +85,21 @@ final class MarkdownTablesTests: XCTestCase {
         XCTAssertNil(MarkdownFormatting.table(.deleteColumn, in: one, selection: caret("1", in: one)), "the only column stays")
     }
 
+    /// Delete Row on the last body row leaves header + separator; reading that (the bar's
+    /// context does, on every caret move) crashed on an invalid closed range (22 Sep 2026).
+    func testAHeaderOnlyTableReadsFormatsAndGrowsARow() throws {
+        let headerOnly = "| a   |     | b   |\n| --- | --- | --- |\n"
+        let t = try XCTUnwrap(MarkdownFormatting.table(in: headerOnly, selection: caret("b", in: headerOnly)))
+        XCTAssertEqual(t.rows, [["a", "", "b"]])
+        XCTAssertEqual(t.row, 0)
+        XCTAssertEqual(t.column, 2)
+        XCTAssertTrue(MarkdownFormatting.context(in: headerOnly, selection: caret("---", in: headerOnly)).table)
+        XCTAssertEqual(MarkdownFormatting.table(.format, in: headerOnly, selection: caret("a", in: headerOnly)).map { apply($0, to: headerOnly) }, headerOnly)
+        let grown = MarkdownFormatting.table(.insertRowBelow, in: headerOnly, selection: caret("a", in: headerOnly))!
+        XCTAssertEqual(apply(grown, to: headerOnly), "| a   |     | b   |\n| --- | --- | --- |\n|     |     |     |\n")
+        XCTAssertNil(MarkdownFormatting.table(.deleteRow, in: headerOnly, selection: caret("a", in: headerOnly)))
+    }
+
     func testInsertTableTakesABlankLineOrStartsAParagraphAfterText() {
         let blank = "text\n\nmore"
         let e = MarkdownFormatting.insertTable(in: blank, selection: NSRange(location: 5, length: 0))
