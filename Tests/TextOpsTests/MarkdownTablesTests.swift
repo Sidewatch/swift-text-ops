@@ -100,6 +100,23 @@ final class MarkdownTablesTests: XCTestCase {
         XCTAssertNil(MarkdownFormatting.table(.deleteRow, in: headerOnly, selection: caret("a", in: headerOnly)))
     }
 
+    func testEveryTableIsListedInOrderAndACellCanBeSetByTableIndex() {
+        let doc = "intro\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\ntext | with | pipes but no separator\n\n| x |\n| - |\n| y |\n| z |\n"
+        let all = MarkdownFormatting.tables(in: doc)
+        XCTAssertEqual(all.map { $0.rows.first! }, [["a", "b"], ["x"]], "two tables, the pipe prose between them is not one")
+        XCTAssertEqual(all.map(\.row), [0, 0])
+        let e = try! XCTUnwrap(MarkdownFormatting.table(1, settingCell: 2, column: 0, to: "new | val\nnext", in: doc))
+        let out = apply(e, to: doc)
+        XCTAssertTrue(out.hasSuffix("| x               |\n| --------------- |\n| y               |\n| new \\| val next |\n"), "a pipe is escaped, a newline is a space, the column widens: \(out.debugDescription)")
+        XCTAssertEqual((out as NSString).substring(with: NSRange(location: e.selection.location, length: 3)), "new", "the caret lands on the cell")
+        let header = try! XCTUnwrap(MarkdownFormatting.table(0, settingCell: 0, column: 1, to: "B", in: doc))
+        XCTAssertTrue(apply(header, to: doc).contains("| a   | B   |\n| --- | --- |\n| 1   | 2   |"), "the header is row 0")
+        XCTAssertNil(MarkdownFormatting.table(2, settingCell: 0, column: 0, to: "x", in: doc), "no third table")
+        XCTAssertNil(MarkdownFormatting.table(0, settingCell: 5, column: 0, to: "x", in: doc), "no such row")
+        XCTAssertNil(MarkdownFormatting.table(0, settingCell: 0, column: 2, to: "x", in: doc), "no such column")
+        XCTAssertEqual(MarkdownFormatting.tables(in: "no tables here"), [])
+    }
+
     func testInsertTableTakesABlankLineOrStartsAParagraphAfterText() {
         let blank = "text\n\nmore"
         let e = MarkdownFormatting.insertTable(in: blank, selection: NSRange(location: 5, length: 0))

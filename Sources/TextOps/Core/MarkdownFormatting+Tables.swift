@@ -68,6 +68,43 @@ extension MarkdownFormatting {
         return Table(range: range, rows: rows, alignments: fullAlignments, row: row, column: column)
     }
 
+    /// Every pipe table in `text`, in order — the nth rendered table is the nth of these — each
+    /// read as ``table(in:selection:)`` reads it, with the caret on its first cell.
+    public static func tables(in text: String) -> [Table] {
+        let lines = text.components(separatedBy: "\n")
+        var starts: [Int] = []
+        var pos = 0
+        for line in lines { starts.append(pos); pos += (line as NSString).length + 1 }
+        var out: [Table] = []
+        var i = 0
+        while i < lines.count {
+            guard isTableLine(lines[i]), i + 1 < lines.count, separatorAlignments(lines[i + 1]) != nil,
+                  let t = table(in: text, selection: NSRange(location: starts[i], length: 0)) else { i += 1; continue }
+            out.append(t)
+            i += (lines[i...].prefix { isTableLine($0) }.count)
+        }
+        return out
+    }
+
+    /// The `tableIndex`th table (0-based) with cell (`row`, `column`) set to `text` — `row` 0
+    /// the header, the rest the body — laid out aligned; nil when there is no such table or
+    /// cell. A `|` in the text is written `\|`, a newline as a space, so the row stays a row.
+    /// The selection lands on the cell. This is what a cell edited in a rendered preview
+    /// writes back (22 Sep 2026, from Glance's cell-by-cell editing).
+    public static func table(_ tableIndex: Int, settingCell row: Int, column: Int, to text: String, in source: String) -> Edit? {
+        let all = tables(in: source)
+        guard all.indices.contains(tableIndex) else { return nil }
+        var t = all[tableIndex]
+        guard t.rows.indices.contains(row), (0..<t.columns).contains(column) else { return nil }
+        let cell = text.replacingOccurrences(of: "\r\n", with: " ").replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\\|", with: "|").replacingOccurrences(of: "|", with: "\\|")
+            .trimmingCharacters(in: .whitespaces)
+        t.rows[row][column] = cell
+        let rendered = render(t)
+        return Edit(range: t.range, replacement: rendered,
+                    selection: NSRange(location: t.range.location + cellOffset(in: t, rendered: rendered, row: row, column: column), length: 0))
+    }
+
     /// A line that belongs to a table: not blank, with an unescaped `|`.
     static func isTableLine(_ line: String) -> Bool {
         !isBlank(line) && line.contains("|") && !cells(line).isEmpty

@@ -54,3 +54,4 @@ counting, the held-back trailing newline, the caller-supplied ending), `TextStat
 - 17 Sep 2026 — full audit (app + all 20 libraries), Claude with David.
 - 18 Sep 2026 — logic review (every source and test file, line by line), Claude with David.
 - 22 Sep 2026 — `MarkdownFormatting` (from Sidewatch's Markdown bar, earlier that day) documented in the README and module map, which the first commit skipped; pipe tables added (`MarkdownFormatting+Tables`, `MarkdownTablesTests`).
+- 22 Sep 2026 (later) — `tables(in:)` and `table(_:settingCell:column:to:in:)` for a rendered preview's cell edits.
