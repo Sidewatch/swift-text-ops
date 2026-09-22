@@ -48,15 +48,41 @@ final class MarkdownFormattingTests: XCTestCase {
         XCTAssertEqual(empty.selection, NSRange(location: 4, length: 0), "the caret sits between the markers")
     }
 
-    func testHeadingsSetReplaceAndToggleOff() {
+    func testHeadingsSetReplaceAndParagraphStrips() {
         let t = "Title\nbody"
         let h2 = MarkdownFormatting.toggle(.heading(2), in: t, selection: NSRange(location: 0, length: 0))
         XCTAssertEqual(apply(h2, to: t), "## Title\nbody")
         XCTAssertEqual(h2.selection, NSRange(location: 0, length: 8), "the whole line is selected, not its newline")
         let h1 = MarkdownFormatting.toggle(.heading(1), in: "## Title\nbody", selection: NSRange(location: 3, length: 0))
         XCTAssertEqual(apply(h1, to: "## Title\nbody"), "# Title\nbody", "a level replaces a level")
-        let off = MarkdownFormatting.toggle(.heading(1), in: "# Title\nbody", selection: NSRange(location: 3, length: 0))
-        XCTAssertEqual(apply(off, to: "# Title\nbody"), "Title\nbody")
+        let same = MarkdownFormatting.toggle(.heading(1), in: "# Title\nbody", selection: NSRange(location: 3, length: 0))
+        XCTAssertEqual(apply(same, to: "# Title\nbody"), "# Title\nbody", "setting the level it has changes nothing — the popup is a selector, not a toggle")
+        let paragraph = MarkdownFormatting.toggle(.heading(0), in: "# Title\nbody", selection: NSRange(location: 3, length: 0))
+        XCTAssertEqual(apply(paragraph, to: "# Title\nbody"), "Title\nbody", "Paragraph strips the heading")
+        let h6 = MarkdownFormatting.toggle(.heading(6), in: t, selection: NSRange(location: 0, length: 0))
+        XCTAssertEqual(apply(h6, to: t), "###### Title\nbody")
+    }
+
+    func testContextReflectsTheCaretsStylesAndBlock() {
+        let doc = "# Sample\n\nText with `inline code`, **bold text**, and *italic text*.\n\n## Features\n\n- first item\n1. ordered\n- [ ] task\n> quoted\n```\nlet x = 1\n```\nplain\n"
+        func ctx(_ needle: String, offset: Int = 1) -> MarkdownFormatting.Context {
+            let r = (doc as NSString).range(of: needle)
+            return MarkdownFormatting.context(in: doc, selection: NSRange(location: r.location + offset, length: 0))
+        }
+        XCTAssertEqual(ctx("Sample"), .init(inline: [], block: .heading(1)))
+        XCTAssertEqual(ctx("Features"), .init(inline: [], block: .heading(2)))
+        XCTAssertEqual(ctx("bold text"), .init(inline: [.bold], block: nil))
+        XCTAssertEqual(ctx("italic text"), .init(inline: [.italic], block: nil))
+        XCTAssertEqual(ctx("inline code"), .init(inline: [.code], block: nil))
+        XCTAssertEqual(ctx("Text with", offset: 0).inline, [], "the caret at the line's start is in no span")
+        XCTAssertEqual(ctx("first item").block, .bullets)
+        XCTAssertEqual(ctx("ordered").block, .numbers)
+        XCTAssertEqual(ctx("task").block, .tasks)
+        XCTAssertEqual(ctx("quoted").block, .quote)
+        XCTAssertEqual(ctx("let x").block, .codeBlock, "inside a fence")
+        XCTAssertEqual(ctx("plain"), .init(inline: [], block: nil), "after the fence closes")
+        let bothStars = "a ***both*** b"
+        XCTAssertEqual(MarkdownFormatting.context(in: bothStars, selection: NSRange(location: 6, length: 0)).inline, [.bold, .italic])
     }
 
     func testListsActPerLineAndToggleOff() {

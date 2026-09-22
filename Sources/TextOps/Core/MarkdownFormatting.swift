@@ -23,8 +23,17 @@ public enum MarkdownFormatting {
         public var marker: String { rawValue }
     }
 
+    /// `heading(n)` SETS level n (1…6) on the lines; `heading(0)` is "Paragraph" and strips one.
     public enum Block: Equatable, Sendable {
         case heading(Int), bullets, numbers, tasks, quote, codeBlock
+    }
+
+    /// What the caret sits in, for a bar that shows its state: the inline styles around the
+    /// selection on its line, and the line's block kind (nil for a paragraph).
+    public struct Context: Equatable, Sendable {
+        public var inline: Set<Inline>
+        public var block: Block?
+        public init(inline: Set<Inline> = [], block: Block? = nil) { self.inline = inline; self.block = block }
     }
 
     /// One replacement and where the selection lands afterwards. UTF-16 ranges, the editor's own.
@@ -84,13 +93,8 @@ public enum MarkdownFormatting {
         let content = rows.filter { !isBlank($0) }
         switch block {
         case .heading(let level):
-            let prefix = String(repeating: "#", count: max(1, min(6, level))) + " "
-            let allAtLevel = !content.isEmpty && content.allSatisfy { $0.hasPrefix(prefix) && !$0.hasPrefix(prefix + "#") }
-            rows = rows.map { row in
-                if isBlank(row) { return row }
-                let bare = stripping(row, pattern: "^#{1,6} ")
-                return allAtLevel ? bare : prefix + bare
-            }
+            let prefix = level <= 0 ? "" : String(repeating: "#", count: min(6, level)) + " "
+            rows = rows.map { row in isBlank(row) ? row : prefix + stripping(row, pattern: "^#{1,6} ") }
         case .bullets:
             let allHave = !content.isEmpty && content.allSatisfy { listParts($0)?.kind == .bullet }
             rows = rows.map { row in
@@ -147,6 +151,45 @@ public enum MarkdownFormatting {
         let labelLength = (inner as NSString).length
         return Edit(range: target, replacement: "[\(inner)](url)", selection: NSRange(location: target.location + 1 + labelLength + 2, length: 3))
     }
+
+    // MARK: - Context
+
+    /// The styles around `selection` on its line and the line's block kind. Inline: the
+    /// selection (or caret) lies inside a `**…**`, `*…*`, `~~…~~` or `` `…` `` span of its
+    /// line, markers included. Block: a heading's level, a list's kind, a quote, or a fenced
+    /// code block (an odd number of ``` lines above).
+    public static func context(in text: String, selection: NSRange) -> Context {
+        let ns = text as NSString
+        let sel = clamp(selection, to: ns)
+        let lineRange = ns.lineRange(for: NSRange(location: sel.location, length: 0))
+        var line = ns.substring(with: lineRange)
+        if line.hasSuffix("\n") { line.removeLast() }
+        var context = Context()
+        let lineNS = line as NSString
+        let local = NSRange(location: sel.location - lineRange.location, length: sel.length)
+        for (style, pattern) in inlinePatterns {
+            guard let re = try? NSRegularExpression(pattern: pattern) else { continue }
+            for m in re.matches(in: line, range: NSRange(location: 0, length: lineNS.length)) {
+                let span = m.range
+                if local.location >= span.location, NSMaxRange(local) <= NSMaxRange(span) { context.inline.insert(style); break }
+            }
+        }
+        let fencesAbove = ns.substring(to: lineRange.location).components(separatedBy: "\n").filter { $0.hasPrefix("```") }.count
+        if fencesAbove % 2 == 1 || line.hasPrefix("```") { context.block = .codeBlock }
+        else if let m = headingRegex.firstMatch(in: line, range: NSRange(location: 0, length: lineNS.length)) { context.block = .heading(m.range(at: 1).length) }
+        else if let parts = listParts(line) {
+            switch parts.kind { case .task: context.block = .tasks; case .number: context.block = .numbers; default: context.block = .bullets }
+        } else if quoteParts(line) != nil { context.block = .quote }
+        return context
+    }
+
+    private static let inlinePatterns: [(Inline, String)] = [
+        (.bold, "\\*\\*[^*\\n]+?\\*\\*"),
+        (.italic, "(?<!\\*)\\*(?!\\*)[^*\\n]+?(?<!\\*)\\*(?!\\*)|\\*\\*\\*[^*\\n]+?\\*\\*\\*"),
+        (.strikethrough, "~~[^~\\n]+?~~"),
+        (.code, "`[^`\\n]+?`"),
+    ]
+    private static let headingRegex = try! NSRegularExpression(pattern: "^(#{1,6}) ")
 
     // MARK: - Return in a list
 
