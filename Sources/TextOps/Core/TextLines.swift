@@ -71,8 +71,10 @@ public enum TextLines {
     ///
     /// - Parameter ending: The terminator to re-join with; omit to detect it from `text`. Pass
     ///   the document's own terminator when `text` is only a slice of it.
-    public static func transform(_ text: String, using ending: LineEnding? = nil,
-                                 _ body: ([String]) -> [String]) -> String {
+    public static func transform(
+        _ text: String, using ending: LineEnding? = nil,
+        _ body: ([String]) -> [String]
+    ) -> String {
         // The caller may know the DOCUMENT's terminator even when transforming a slice of it.
         // Detecting from the slice alone means a selected block containing no terminator always
         // re-joins with LF, silently converting those lines in a CRLF file.

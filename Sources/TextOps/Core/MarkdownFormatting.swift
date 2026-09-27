@@ -38,7 +38,9 @@ public enum MarkdownFormatting {
         /// Whether the line is a row of a pipe table (`table(in:selection:)` finds one).
         public var table: Bool
         /// Creates a context; the defaults describe a plain paragraph.
-        public init(inline: Set<Inline> = [], block: Block? = nil, table: Bool = false) { self.inline = inline; self.block = block; self.table = table }
+        public init(inline: Set<Inline> = [], block: Block? = nil, table: Bool = false) {
+            self.inline = inline; self.block = block; self.table = table
+        }
     }
 
     /// One replacement and where the selection lands afterwards. UTF-16 ranges, the editor's own.
@@ -69,9 +71,11 @@ public enum MarkdownFormatting {
         // A: the target carries its own markers ("**bold**" selected whole). For italic the
         // pair must be single stars — "**bold**" is bold, and italic on it adds a third star.
         if innerNS.length >= 2 * mLen, inner.hasPrefix(marker), inner.hasSuffix(marker),
-           !(style == .italic && (inner.hasPrefix("**") || inner.hasSuffix("**"))) {
+            !(style == .italic && (inner.hasPrefix("**") || inner.hasSuffix("**")))
+        {
             let stripped = innerNS.substring(with: NSRange(location: mLen, length: innerNS.length - 2 * mLen))
-            return Edit(range: target, replacement: stripped, selection: NSRange(location: target.location, length: (stripped as NSString).length))
+            return Edit(
+                range: target, replacement: stripped, selection: NSRange(location: target.location, length: (stripped as NSString).length))
         }
         // B: the markers sit just outside the target ("bold" selected inside "**bold**"). For
         // italic, a single star each side is italic; two each side is bold, untouched; three
@@ -79,7 +83,8 @@ public enum MarkdownFormatting {
         let before = NSRange(location: target.location - mLen, length: mLen)
         let after = NSRange(location: NSMaxRange(target), length: mLen)
         if before.location >= 0, NSMaxRange(after) <= ns.length,
-           ns.substring(with: before) == marker, ns.substring(with: after) == marker {
+            ns.substring(with: before) == marker, ns.substring(with: after) == marker
+        {
             let starsBefore = style == .italic ? run(of: "*", in: ns, endingBefore: target.location) : 0
             let starsAfter = style == .italic ? run(of: "*", in: ns, startingAt: NSMaxRange(target)) : 0
             let italicPair = style != .italic || starsBefore == 1 || starsBefore == 3 || starsAfter == 1 || starsAfter == 3
@@ -88,8 +93,9 @@ public enum MarkdownFormatting {
                 return Edit(range: outer, replacement: inner, selection: NSRange(location: before.location, length: innerNS.length))
             }
         }
-        return Edit(range: target, replacement: marker + inner + marker,
-                    selection: NSRange(location: target.location + mLen, length: innerNS.length))
+        return Edit(
+            range: target, replacement: marker + inner + marker,
+            selection: NSRange(location: target.location + mLen, length: innerNS.length))
     }
 
     // MARK: - Block
@@ -112,7 +118,10 @@ public enum MarkdownFormatting {
             let allHave = !content.isEmpty && content.allSatisfy { listParts($0)?.kind == .bullet }
             rows = rows.map { row in
                 guard !isBlank(row) else { return row }
-                let p = listParts(row) ?? (indent: leadingSpace(row), kind: .none, marker: "", rest: row.dropFirst(leadingSpace(row).count).description)
+                let p =
+                    listParts(row) ?? (
+                        indent: leadingSpace(row), kind: .none, marker: "", rest: row.dropFirst(leadingSpace(row).count).description
+                    )
                 return allHave ? p.indent + p.rest : p.indent + "- " + p.rest
             }
         case .numbers:
@@ -120,7 +129,10 @@ public enum MarkdownFormatting {
             var n = 0
             rows = rows.map { row in
                 guard !isBlank(row) else { return row }
-                let p = listParts(row) ?? (indent: leadingSpace(row), kind: .none, marker: "", rest: row.dropFirst(leadingSpace(row).count).description)
+                let p =
+                    listParts(row) ?? (
+                        indent: leadingSpace(row), kind: .none, marker: "", rest: row.dropFirst(leadingSpace(row).count).description
+                    )
                 if allHave { return p.indent + p.rest }
                 n += 1
                 return p.indent + "\(n). " + p.rest
@@ -129,7 +141,10 @@ public enum MarkdownFormatting {
             let allHave = !content.isEmpty && content.allSatisfy { listParts($0)?.kind == .task }
             rows = rows.map { row in
                 guard !isBlank(row) else { return row }
-                let p = listParts(row) ?? (indent: leadingSpace(row), kind: .none, marker: "", rest: row.dropFirst(leadingSpace(row).count).description)
+                let p =
+                    listParts(row) ?? (
+                        indent: leadingSpace(row), kind: .none, marker: "", rest: row.dropFirst(leadingSpace(row).count).description
+                    )
                 return allHave ? p.indent + p.rest : p.indent + "- [ ] " + p.rest
             }
         case .quote:
@@ -162,7 +177,8 @@ public enum MarkdownFormatting {
             return Edit(range: target, replacement: "[text](url)", selection: NSRange(location: target.location + 1, length: 4))
         }
         let labelLength = (inner as NSString).length
-        return Edit(range: target, replacement: "[\(inner)](url)", selection: NSRange(location: target.location + 1 + labelLength + 2, length: 3))
+        return Edit(
+            range: target, replacement: "[\(inner)](url)", selection: NSRange(location: target.location + 1 + labelLength + 2, length: 3))
     }
 
     // MARK: - Context
@@ -188,11 +204,19 @@ public enum MarkdownFormatting {
             }
         }
         let fencesAbove = ns.substring(to: lineRange.location).components(separatedBy: "\n").filter { $0.hasPrefix("```") }.count
-        if fencesAbove % 2 == 1 || line.hasPrefix("```") { context.block = .codeBlock }
-        else if let m = headingRegex.firstMatch(in: line, range: NSRange(location: 0, length: lineNS.length)) { context.block = .heading(m.range(at: 1).length) }
-        else if let parts = listParts(line) {
-            switch parts.kind { case .task: context.block = .tasks; case .number: context.block = .numbers; default: context.block = .bullets }
-        } else if quoteParts(line) != nil { context.block = .quote }
+        if fencesAbove % 2 == 1 || line.hasPrefix("```") {
+            context.block = .codeBlock
+        } else if let m = headingRegex.firstMatch(in: line, range: NSRange(location: 0, length: lineNS.length)) {
+            context.block = .heading(m.range(at: 1).length)
+        } else if let parts = listParts(line) {
+            switch parts.kind {
+            case .task: context.block = .tasks;
+            case .number: context.block = .numbers;
+            default: context.block = .bullets
+            }
+        } else if quoteParts(line) != nil {
+            context.block = .quote
+        }
         context.table = context.block != .codeBlock && table(in: text, selection: sel) != nil
         return context
     }
@@ -222,10 +246,11 @@ public enum MarkdownFormatting {
         let head = parts.indent + parts.marker
         let headLength = (head as NSString).length
         let markerEnd = lineRange.location + headLength
-        guard caret >= markerEnd else { return nil }   // the caret inside the marker: an ordinary Return
+        guard caret >= markerEnd else { return nil }  // the caret inside the marker: an ordinary Return
         if isBlank(parts.rest), caret == lineRange.location + lineNS.length {
-            return Edit(range: NSRange(location: lineRange.location, length: headLength), replacement: "",
-                        selection: NSRange(location: lineRange.location, length: 0))
+            return Edit(
+                range: NSRange(location: lineRange.location, length: headLength), replacement: "",
+                selection: NSRange(location: lineRange.location, length: 0))
         }
         let next: String
         switch parts.kind {
@@ -234,8 +259,9 @@ public enum MarkdownFormatting {
         default: next = parts.marker
         }
         let insert = "\n" + parts.indent + next
-        return Edit(range: NSRange(location: caret, length: 0), replacement: insert,
-                    selection: NSRange(location: caret + (insert as NSString).length, length: 0))
+        return Edit(
+            range: NSRange(location: caret, length: 0), replacement: insert,
+            selection: NSRange(location: caret + (insert as NSString).length, length: 0))
     }
 
     // MARK: - Pieces

@@ -52,8 +52,9 @@ final class TextOpsTests: XCTestCase {
     func testNumericSortHandlesSignsDecimalsAndNumberedLists() {
         XCTAssertEqual(LineOps.sort(["3.5", "-2", "10"], by: .numeric), ["-2", "3.5", "10"])
         // "12." must not be read as unparseable and dropped to the end.
-        XCTAssertEqual(LineOps.sort(["12. Widgets", "2. Apples"], by: .numeric),
-                       ["2. Apples", "12. Widgets"])
+        XCTAssertEqual(
+            LineOps.sort(["12. Widgets", "2. Apples"], by: .numeric),
+            ["2. Apples", "12. Widgets"])
         XCTAssertEqual(LineOps.sort(["v10", "v2"], by: .numeric), ["v2", "v10"])
     }
 
@@ -87,8 +88,9 @@ final class TextOpsTests: XCTestCase {
     }
 
     func testUniqueCaseInsensitiveKeepsTheFirstSpelling() {
-        XCTAssertEqual(LineOps.unique(["Apple", "APPLE", "apple", "Pear"], caseInsensitive: true),
-                       ["Apple", "Pear"])
+        XCTAssertEqual(
+            LineOps.unique(["Apple", "APPLE", "apple", "Pear"], caseInsensitive: true),
+            ["Apple", "Pear"])
         // Case-sensitive by default: nothing collapses.
         XCTAssertEqual(LineOps.unique(["Apple", "APPLE"]), ["Apple", "APPLE"])
     }
@@ -100,15 +102,17 @@ final class TextOpsTests: XCTestCase {
     }
 
     func testCollapseBlankRunsKeepsOneSeparator() {
-        XCTAssertEqual(LineOps.collapseBlankRuns(["a", "", "", "", "b", "", "c"]),
-                       ["a", "", "b", "", "c"])
+        XCTAssertEqual(
+            LineOps.collapseBlankRuns(["a", "", "", "", "b", "", "c"]),
+            ["a", "", "b", "", "c"])
         // A whitespace-only line counts as blank, and the survivor is the first of the run.
         XCTAssertEqual(LineOps.collapseBlankRuns(["a", "  ", "", "b"]), ["a", "  ", "b"])
     }
 
     func testTrimTrailingWhitespacePreservesIndentation() {
-        XCTAssertEqual(LineOps.trimTrailingWhitespace(["    indented   ", "plain\t", "   "]),
-                       ["    indented", "plain", ""])
+        XCTAssertEqual(
+            LineOps.trimTrailingWhitespace(["    indented   ", "plain\t", "   "]),
+            ["    indented", "plain", ""])
     }
 
     // MARK: - Joining & splitting

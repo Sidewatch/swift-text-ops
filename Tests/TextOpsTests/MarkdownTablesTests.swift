@@ -21,17 +21,23 @@ final class MarkdownTablesTests: XCTestCase {
     private func caret(_ s: String, in text: String) -> NSRange { NSRange(location: (text as NSString).range(of: s).location, length: 0) }
 
     private let ugly = "intro\n|Name|Qty|Price|\n|:--|--:|:-:|\n|apple|1|0.5|\n|kiwi \\| gold|12|10|\n\nafter"
-    private let pretty = "intro\n| Name         | Qty | Price |\n| :----------- | --: | :---: |\n| apple        |   1 |  0.5  |\n| kiwi \\| gold |  12 |  10   |\n\nafter"
+    private let pretty =
+        "intro\n| Name         | Qty | Price |\n| :----------- | --: | :---: |\n| apple        |   1 |  0.5  |\n| kiwi \\| gold |  12 |  10   |\n\nafter"
 
     func testTheTableAtTheCaretIsReadAsCellsWithAlignmentsAndTheCaretsCell() throws {
         let t = try XCTUnwrap(MarkdownFormatting.table(in: ugly, selection: caret("12", in: ugly)))
-        XCTAssertEqual(t.rows, [["Name", "Qty", "Price"], ["apple", "1", "0.5"], ["kiwi \\| gold", "12", "10"]], "the separator is not a row; an escaped pipe stays in its cell")
+        XCTAssertEqual(
+            t.rows, [["Name", "Qty", "Price"], ["apple", "1", "0.5"], ["kiwi \\| gold", "12", "10"]],
+            "the separator is not a row; an escaped pipe stays in its cell")
         XCTAssertEqual(t.alignments, [.left, .right, .center])
         XCTAssertEqual((t.row, t.column).0, 2)
         XCTAssertEqual(t.column, 1)
-        XCTAssertEqual((ugly as NSString).substring(with: t.range), "|Name|Qty|Price|\n|:--|--:|:-:|\n|apple|1|0.5|\n|kiwi \\| gold|12|10|", "the lines of the table, without the blank line after")
+        XCTAssertEqual(
+            (ugly as NSString).substring(with: t.range), "|Name|Qty|Price|\n|:--|--:|:-:|\n|apple|1|0.5|\n|kiwi \\| gold|12|10|",
+            "the lines of the table, without the blank line after")
         XCTAssertEqual(MarkdownFormatting.table(in: ugly, selection: caret("Price", in: ugly))?.row, 0)
-        XCTAssertEqual(MarkdownFormatting.table(in: ugly, selection: caret(":-:", in: ugly))?.row, 0, "the separator line counts as the header")
+        XCTAssertEqual(
+            MarkdownFormatting.table(in: ugly, selection: caret(":-:", in: ugly))?.row, 0, "the separator line counts as the header")
         XCTAssertEqual(MarkdownFormatting.table(in: ugly, selection: caret("Price", in: ugly))?.column, 2)
     }
 
@@ -49,8 +55,12 @@ final class MarkdownTablesTests: XCTestCase {
     func testFormatAlignsEveryColumnAndKeepsTheColons() {
         let e = MarkdownFormatting.table(.format, in: ugly, selection: caret("12", in: ugly))!
         XCTAssertEqual(apply(e, to: ugly), pretty)
-        XCTAssertEqual((apply(e, to: ugly) as NSString).substring(with: NSRange(location: e.selection.location, length: 2)), "12", "the caret lands on its cell's text")
-        XCTAssertEqual(MarkdownFormatting.table(.format, in: pretty, selection: caret("12", in: pretty)).map { apply($0, to: pretty) }, pretty, "formatting a formatted table changes nothing")
+        XCTAssertEqual(
+            (apply(e, to: ugly) as NSString).substring(with: NSRange(location: e.selection.location, length: 2)), "12",
+            "the caret lands on its cell's text")
+        XCTAssertEqual(
+            MarkdownFormatting.table(.format, in: pretty, selection: caret("12", in: pretty)).map { apply($0, to: pretty) }, pretty,
+            "formatting a formatted table changes nothing")
     }
 
     func testRaggedRowsAndMissingOuterPipesAreNormalised() {
@@ -65,11 +75,17 @@ final class MarkdownTablesTests: XCTestCase {
         let withRow = apply(below, to: pretty)
         XCTAssertEqual(withRow.components(separatedBy: "\n")[4], "|              |     |       |")
         XCTAssertEqual(withRow.components(separatedBy: "\n")[3], "| apple        |   1 |  0.5  |")
-        XCTAssertEqual(below.selection, NSRange(location: (withRow as NSString).range(of: "|              |").location + 2, length: 0), "the caret is in the new row's first cell")
+        XCTAssertEqual(
+            below.selection, NSRange(location: (withRow as NSString).range(of: "|              |").location + 2, length: 0),
+            "the caret is in the new row's first cell")
         let aboveHeader = MarkdownFormatting.table(.insertRowAbove, in: pretty, selection: caret("Name", in: pretty))!
-        XCTAssertEqual(apply(aboveHeader, to: pretty).components(separatedBy: "\n")[3], "|              |     |       |", "above the header goes below it")
+        XCTAssertEqual(
+            apply(aboveHeader, to: pretty).components(separatedBy: "\n")[3], "|              |     |       |",
+            "above the header goes below it")
         let deleted = MarkdownFormatting.table(.deleteRow, in: pretty, selection: caret("apple", in: pretty))!
-        XCTAssertEqual(apply(deleted, to: pretty), "intro\n| Name         | Qty | Price |\n| :----------- | --: | :---: |\n| kiwi \\| gold |  12 |  10   |\n\nafter")
+        XCTAssertEqual(
+            apply(deleted, to: pretty),
+            "intro\n| Name         | Qty | Price |\n| :----------- | --: | :---: |\n| kiwi \\| gold |  12 |  10   |\n\nafter")
         XCTAssertNil(MarkdownFormatting.table(.deleteRow, in: pretty, selection: caret("Name", in: pretty)), "the header cannot be deleted")
     }
 
@@ -78,7 +94,9 @@ final class MarkdownTablesTests: XCTestCase {
         let grown = apply(after, to: pretty)
         XCTAssertEqual(grown.components(separatedBy: "\n")[1], "| Name         | Qty |     | Price |")
         XCTAssertEqual(grown.components(separatedBy: "\n")[2], "| :----------- | --: | --- | :---: |")
-        XCTAssertEqual(after.selection.location, (grown as NSString).range(of: "| Qty |     |").location + 8, "the caret is in the new column's header cell")
+        XCTAssertEqual(
+            after.selection.location, (grown as NSString).range(of: "| Qty |     |").location + 8,
+            "the caret is in the new column's header cell")
         let before = MarkdownFormatting.table(.insertColumnBefore, in: pretty, selection: caret("Name", in: pretty))!
         XCTAssertTrue(apply(before, to: pretty).components(separatedBy: "\n")[1].hasPrefix("|     | Name "))
         let dropped = MarkdownFormatting.table(.deleteColumn, in: pretty, selection: caret("Qty", in: pretty))!
@@ -97,7 +115,9 @@ final class MarkdownTablesTests: XCTestCase {
         XCTAssertEqual(t.row, 0)
         XCTAssertEqual(t.column, 2)
         XCTAssertTrue(MarkdownFormatting.context(in: headerOnly, selection: caret("---", in: headerOnly)).table)
-        XCTAssertEqual(MarkdownFormatting.table(.format, in: headerOnly, selection: caret("a", in: headerOnly)).map { apply($0, to: headerOnly) }, headerOnly)
+        XCTAssertEqual(
+            MarkdownFormatting.table(.format, in: headerOnly, selection: caret("a", in: headerOnly)).map { apply($0, to: headerOnly) },
+            headerOnly)
         let grown = MarkdownFormatting.table(.insertRowBelow, in: headerOnly, selection: caret("a", in: headerOnly))!
         XCTAssertEqual(apply(grown, to: headerOnly), "| a   |     | b   |\n| --- | --- | --- |\n|     |     |     |\n")
         XCTAssertNil(MarkdownFormatting.table(.deleteRow, in: headerOnly, selection: caret("a", in: headerOnly)))
@@ -110,8 +130,11 @@ final class MarkdownTablesTests: XCTestCase {
         XCTAssertEqual(all.map(\.row), [0, 0])
         let e = try! XCTUnwrap(MarkdownFormatting.table(1, settingCell: 2, column: 0, to: "new | val\nnext", in: doc))
         let out = apply(e, to: doc)
-        XCTAssertTrue(out.hasSuffix("| x               |\n| --------------- |\n| y               |\n| new \\| val next |\n"), "a pipe is escaped, a newline is a space, the column widens: \(out.debugDescription)")
-        XCTAssertEqual((out as NSString).substring(with: NSRange(location: e.selection.location, length: 3)), "new", "the caret lands on the cell")
+        XCTAssertTrue(
+            out.hasSuffix("| x               |\n| --------------- |\n| y               |\n| new \\| val next |\n"),
+            "a pipe is escaped, a newline is a space, the column widens: \(out.debugDescription)")
+        XCTAssertEqual(
+            (out as NSString).substring(with: NSRange(location: e.selection.location, length: 3)), "new", "the caret lands on the cell")
         let header = try! XCTUnwrap(MarkdownFormatting.table(0, settingCell: 0, column: 1, to: "B", in: doc))
         XCTAssertTrue(apply(header, to: doc).contains("| a   | B   |\n| --- | --- |\n| 1   | 2   |"), "the header is row 0")
         XCTAssertNil(MarkdownFormatting.table(2, settingCell: 0, column: 0, to: "x", in: doc), "no third table")
@@ -124,7 +147,10 @@ final class MarkdownTablesTests: XCTestCase {
         let blank = "text\n\nmore"
         let e = MarkdownFormatting.insertTable(in: blank, selection: NSRange(location: 5, length: 0))
         let out = apply(e, to: blank)
-        XCTAssertEqual(out, "text\n| Column 1 | Column 2 | Column 3 |\n| -------- | -------- | -------- |\n|          |          |          |\n|          |          |          |\nmore")
+        XCTAssertEqual(
+            out,
+            "text\n| Column 1 | Column 2 | Column 3 |\n| -------- | -------- | -------- |\n|          |          |          |\n|          |          |          |\nmore"
+        )
         XCTAssertEqual((out as NSString).substring(with: e.selection), "Column 1", "the first header cell is selected to type over")
         let inline = "text"
         let e2 = MarkdownFormatting.insertTable(in: inline, selection: NSRange(location: 2, length: 0), columns: 2, rows: 1)

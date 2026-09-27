@@ -43,14 +43,16 @@ final class EditorConfigTests: XCTestCase {
     func testGlobMatching() {
         XCTAssertTrue(EditorConfig.matches(pattern: "*", path: "a.swift"))
         XCTAssertTrue(EditorConfig.matches(pattern: "*.swift", path: "a.swift"))
-        XCTAssertTrue(EditorConfig.matches(pattern: "*.swift", path: "Sources/Deep/a.swift"),
-                      "a pattern with no slash matches the NAME at any depth")
+        XCTAssertTrue(
+            EditorConfig.matches(pattern: "*.swift", path: "Sources/Deep/a.swift"),
+            "a pattern with no slash matches the NAME at any depth")
         XCTAssertFalse(EditorConfig.matches(pattern: "*.swift", path: "a.js"))
         XCTAssertTrue(EditorConfig.matches(pattern: "{*.yml,*.yaml}", path: "ci.yaml"))
         XCTAssertFalse(EditorConfig.matches(pattern: "{*.yml,*.yaml}", path: "ci.json"))
         XCTAssertTrue(EditorConfig.matches(pattern: "Sources/**/*.swift", path: "Sources/A/B/c.swift"))
-        XCTAssertFalse(EditorConfig.matches(pattern: "Sources/*.swift", path: "Sources/A/c.swift"),
-                       "a single star does not cross a path separator")
+        XCTAssertFalse(
+            EditorConfig.matches(pattern: "Sources/*.swift", path: "Sources/A/c.swift"),
+            "a single star does not cross a path separator")
         XCTAssertTrue(EditorConfig.matches(pattern: "file?.txt", path: "file1.txt"))
         XCTAssertTrue(EditorConfig.matches(pattern: "*.[ch]", path: "main.c"))
     }
@@ -58,16 +60,17 @@ final class EditorConfigTests: XCTestCase {
     // MARK: - Resolution against real files
 
     func testIndentStyleAndSizeApplyToMatchingFiles() throws {
-        try write("""
-        root = true
+        try write(
+            """
+            root = true
 
-        [*]
-        indent_style = space
-        indent_size = 4
+            [*]
+            indent_style = space
+            indent_size = 4
 
-        [*.rb]
-        indent_size = 2
-        """, at: "")
+            [*.rb]
+            indent_size = 2
+            """, at: "")
 
         let swift = EditorConfig.settings(for: scratch.appendingPathComponent("a.swift"))
         XCTAssertEqual(swift.useSpaces, true)
@@ -80,12 +83,13 @@ final class EditorConfigTests: XCTestCase {
     }
 
     func testTabsAreReportedAsTabs() throws {
-        try write("""
-        root = true
-        [*.go]
-        indent_style = tab
-        tab_width = 8
-        """, at: "")
+        try write(
+            """
+            root = true
+            [*.go]
+            indent_style = tab
+            tab_width = 8
+            """, at: "")
         let go = EditorConfig.settings(for: scratch.appendingPathComponent("main.go"))
         XCTAssertEqual(go.useSpaces, false)
         XCTAssertEqual(go.tabWidth, 8)
@@ -93,16 +97,18 @@ final class EditorConfigTests: XCTestCase {
     }
 
     func testNearestFileWins() throws {
-        try write("""
-        root = true
-        [*]
-        indent_size = 4
-        indent_style = space
-        """, at: "")
-        try write("""
-        [*]
-        indent_size = 2
-        """, at: "web")
+        try write(
+            """
+            root = true
+            [*]
+            indent_size = 4
+            indent_style = space
+            """, at: "")
+        try write(
+            """
+            [*]
+            indent_size = 2
+            """, at: "web")
 
         let nested = EditorConfig.settings(for: scratch.appendingPathComponent("web/app.js"))
         XCTAssertEqual(nested.indentWidth, 2, "the nearer file wins")
@@ -113,15 +119,17 @@ final class EditorConfigTests: XCTestCase {
     }
 
     func testRootTrueStopsTheWalk() throws {
-        try write("""
-        [*]
-        indent_size = 8
-        """, at: "")
-        try write("""
-        root = true
-        [*]
-        indent_style = space
-        """, at: "inner")
+        try write(
+            """
+            [*]
+            indent_size = 8
+            """, at: "")
+        try write(
+            """
+            root = true
+            [*]
+            indent_style = space
+            """, at: "inner")
 
         let resolved = EditorConfig.settings(for: scratch.appendingPathComponent("inner/a.swift"))
         XCTAssertEqual(resolved.useSpaces, true)
@@ -129,38 +137,42 @@ final class EditorConfigTests: XCTestCase {
     }
 
     func testSilenceIsNotADefault() throws {
-        try write("""
-        root = true
-        [*.md]
-        indent_size = 2
-        """, at: "")
+        try write(
+            """
+            root = true
+            [*.md]
+            indent_size = 2
+            """, at: "")
         let swift = EditorConfig.settings(for: scratch.appendingPathComponent("a.swift"))
         XCTAssertTrue(swift.isEmpty, "a file nothing matched must report nothing, not a default")
     }
 
     func testCommentsAndBlankLinesAreIgnored() throws {
-        try write("""
-        # a comment
-        root = true
+        try write(
+            """
+            # a comment
+            root = true
 
-        ; another comment
-        [*]
-        indent_style = space   # an inline comment, which the spec allows after a value
-        indent_size = 3 ; and the other comment character
-        """, at: "")
+            ; another comment
+            [*]
+            indent_style = space   # an inline comment, which the spec allows after a value
+            indent_size = 3 ; and the other comment character
+            """, at: "")
         let resolved = EditorConfig.settings(for: scratch.appendingPathComponent("a.txt"))
         XCTAssertEqual(resolved.indentWidth, 3)
-        XCTAssertEqual(resolved.useSpaces, true,
-                       "an inline comment must not become part of the value")
+        XCTAssertEqual(
+            resolved.useSpaces, true,
+            "an inline comment must not become part of the value")
     }
 
     func testSaveBehaviourKeys() throws {
-        try write("""
-        root = true
-        [*]
-        trim_trailing_whitespace = true
-        insert_final_newline = false
-        """, at: "")
+        try write(
+            """
+            root = true
+            [*]
+            trim_trailing_whitespace = true
+            insert_final_newline = false
+            """, at: "")
         let resolved = EditorConfig.settings(for: scratch.appendingPathComponent("a.txt"))
         XCTAssertEqual(resolved.trimTrailingWhitespace, true)
         XCTAssertEqual(resolved.insertFinalNewline, false)
@@ -192,7 +204,8 @@ final class EditorConfigTests: XCTestCase {
         XCTAssertTrue(EditorConfig.matches(pattern: "**/c.swift", path: "c.swift"), "a leading **/ matches the top level")
         XCTAssertTrue(EditorConfig.matches(pattern: "**/c.swift", path: "A/c.swift"))
         XCTAssertFalse(EditorConfig.matches(pattern: "Sources/**/*.swift", path: "Other/c.swift"))
-        XCTAssertFalse(EditorConfig.matches(pattern: "Sources/*.swift", path: "Sources/A/c.swift"),
-                       "a single star still stops at a slash")
+        XCTAssertFalse(
+            EditorConfig.matches(pattern: "Sources/*.swift", path: "Sources/A/c.swift"),
+            "a single star still stops at a slash")
     }
 }

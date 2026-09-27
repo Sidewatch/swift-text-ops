@@ -17,7 +17,7 @@ import XCTest
 final class IdentifierTests: XCTestCase {
 
     func testRangeCoversTheWholeWordFromAnyOfItsUnits() {
-        let ns = "let $foo_bar = 1" as NSString      // `$foo_bar` is 4..<12
+        let ns = "let $foo_bar = 1" as NSString  // `$foo_bar` is 4..<12
         for i in 4..<12 { XCTAssertEqual(Identifier.range(at: i, in: ns), NSRange(location: 4, length: 8), "at \(i)") }
     }
 
@@ -42,8 +42,9 @@ final class IdentifierTests: XCTestCase {
     }
 
     func testWholeWordMatchesFindEveryOccurrence() {
-        XCTAssertEqual(WholeWord.matches(of: "foo", in: "foo food foo" as NSString),
-                       [NSRange(location: 0, length: 3), NSRange(location: 9, length: 3)])
+        XCTAssertEqual(
+            WholeWord.matches(of: "foo", in: "foo food foo" as NSString),
+            [NSRange(location: 0, length: 3), NSRange(location: 9, length: 3)])
         XCTAssertEqual(WholeWord.matches(of: "==", in: "a == b == c" as NSString).count, 2, "a non-word needle still matches")
         XCTAssertEqual(WholeWord.matches(of: "", in: "abc" as NSString), [])
     }

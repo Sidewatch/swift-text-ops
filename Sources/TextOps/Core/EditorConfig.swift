@@ -28,8 +28,10 @@ public struct EditorConfigSettings: Equatable, Sendable {
     public var insertFinalNewline: Bool?
 
     /// Creates settings; every omitted field means the file said nothing about it.
-    public init(useSpaces: Bool? = nil, indentWidth: Int? = nil, tabWidth: Int? = nil,
-                trimTrailingWhitespace: Bool? = nil, insertFinalNewline: Bool? = nil) {
+    public init(
+        useSpaces: Bool? = nil, indentWidth: Int? = nil, tabWidth: Int? = nil,
+        trimTrailingWhitespace: Bool? = nil, insertFinalNewline: Bool? = nil
+    ) {
         self.useSpaces = useSpaces
         self.indentWidth = indentWidth
         self.tabWidth = tabWidth
@@ -80,7 +82,7 @@ public enum EditorConfig {
                 if isRoot { break }
             }
             let parent = dir.deletingLastPathComponent().standardizedFileURL
-            if parent == dir { break }          // filesystem root
+            if parent == dir { break }  // filesystem root
             dir = parent
         }
         return resolved
@@ -91,11 +93,13 @@ public enum EditorConfig {
     ///
     /// `base` is the directory the file sits in, which is what section globs are relative to.
     /// Exposed for testing without touching the filesystem.
-    public static func parse(_ text: String, for file: URL,
-                             relativeTo base: URL) -> (settings: EditorConfigSettings, isRoot: Bool) {
+    public static func parse(
+        _ text: String, for file: URL,
+        relativeTo base: URL
+    ) -> (settings: EditorConfigSettings, isRoot: Bool) {
         var out = EditorConfigSettings()
         var isRoot = false
-        var sectionApplies = false          // preamble keys are not in any section
+        var sectionApplies = false  // preamble keys are not in any section
         var inPreamble = true
         let relative = relativePath(of: file, under: base)
 
@@ -133,11 +137,14 @@ public enum EditorConfig {
 
             switch key {
             case "indent_style":
-                if value == "space" { out.useSpaces = true }
-                else if value == "tab" { out.useSpaces = false }
+                if value == "space" { out.useSpaces = true } else if value == "tab" { out.useSpaces = false }
             case "indent_size":
-                if value == "tab" { out.indentWidth = nil }     // resolved from tab_width below
-                else if let n = Int(value), n > 0 { out.indentWidth = n }
+                if value == "tab" {
+                    out.indentWidth = nil
+                }  // resolved from tab_width below
+                else if let n = Int(value), n > 0 {
+                    out.indentWidth = n
+                }
             case "tab_width":
                 if let n = Int(value), n > 0 { out.tabWidth = n }
             case "trim_trailing_whitespace":
@@ -187,7 +194,8 @@ public enum EditorConfig {
     /// Expands one level of `{a,b,c}` alternation, or nil when there is none.
     private static func expandBraces(_ pattern: String) -> [String]? {
         guard let open = pattern.firstIndex(of: "{"),
-              let close = pattern[open...].firstIndex(of: "}") else { return nil }
+            let close = pattern[open...].firstIndex(of: "}")
+        else { return nil }
         let head = String(pattern[pattern.startIndex..<open])
         let tail = String(pattern[pattern.index(after: close)...])
         let body = pattern[pattern.index(after: open)..<close]

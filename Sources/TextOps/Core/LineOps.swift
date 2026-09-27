@@ -27,10 +27,12 @@ public enum LineOps {
     ///
     /// With ``SortKey/numeric``, lines containing no number keep their relative order and collect
     /// at the end in both directions. `caseInsensitive` applies to ``SortKey/alphabetical`` only.
-    public static func sort(_ lines: [String],
-                            by key: SortKey = .alphabetical,
-                            descending: Bool = false,
-                            caseInsensitive: Bool = false) -> [String] {
+    public static func sort(
+        _ lines: [String],
+        by key: SortKey = .alphabetical,
+        descending: Bool = false,
+        caseInsensitive: Bool = false
+    ) -> [String] {
         guard key == .numeric else {
             return stableSort(lines, descending: descending) {
                 compare($0, $1, by: key, caseInsensitive: caseInsensitive)
@@ -241,9 +243,11 @@ public enum LineOps {
 
     /// Sorts with the original index as the tiebreak, so equal elements never reorder — including
     /// when `descending` flips the comparison.
-    private static func stableSort(_ lines: [String],
-                                   descending: Bool,
-                                   by compare: (String, String) -> ComparisonResult) -> [String] {
+    private static func stableSort(
+        _ lines: [String],
+        descending: Bool,
+        by compare: (String, String) -> ComparisonResult
+    ) -> [String] {
         lines.enumerated()
             .sorted { a, b in
                 switch compare(a.element, b.element) {

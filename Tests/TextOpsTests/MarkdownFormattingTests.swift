@@ -57,7 +57,9 @@ final class MarkdownFormattingTests: XCTestCase {
         let h1 = MarkdownFormatting.toggle(.heading(1), in: "## Title\nbody", selection: NSRange(location: 3, length: 0))
         XCTAssertEqual(apply(h1, to: "## Title\nbody"), "# Title\nbody", "a level replaces a level")
         let same = MarkdownFormatting.toggle(.heading(1), in: "# Title\nbody", selection: NSRange(location: 3, length: 0))
-        XCTAssertEqual(apply(same, to: "# Title\nbody"), "# Title\nbody", "setting the level it has changes nothing — the popup is a selector, not a toggle")
+        XCTAssertEqual(
+            apply(same, to: "# Title\nbody"), "# Title\nbody",
+            "setting the level it has changes nothing — the popup is a selector, not a toggle")
         let paragraph = MarkdownFormatting.toggle(.heading(0), in: "# Title\nbody", selection: NSRange(location: 3, length: 0))
         XCTAssertEqual(apply(paragraph, to: "# Title\nbody"), "Title\nbody", "Paragraph strips the heading")
         let h6 = MarkdownFormatting.toggle(.heading(6), in: t, selection: NSRange(location: 0, length: 0))
@@ -65,7 +67,8 @@ final class MarkdownFormattingTests: XCTestCase {
     }
 
     func testContextReflectsTheCaretsStylesAndBlock() {
-        let doc = "# Sample\n\nText with `inline code`, **bold text**, and *italic text*.\n\n## Features\n\n- first item\n1. ordered\n- [ ] task\n> quoted\n```\nlet x = 1\n```\nplain\n"
+        let doc =
+            "# Sample\n\nText with `inline code`, **bold text**, and *italic text*.\n\n## Features\n\n- first item\n1. ordered\n- [ ] task\n> quoted\n```\nlet x = 1\n```\nplain\n"
         func ctx(_ needle: String, offset: Int = 1) -> MarkdownFormatting.Context {
             let r = (doc as NSString).range(of: needle)
             return MarkdownFormatting.context(in: doc, selection: NSRange(location: r.location + offset, length: 0))
@@ -91,12 +94,20 @@ final class MarkdownFormattingTests: XCTestCase {
         let all = NSRange(location: 0, length: (t as NSString).length)
         let bullets = apply(MarkdownFormatting.toggle(.bullets, in: t, selection: all), to: t)
         XCTAssertEqual(bullets, "- one\n- two\n\n- three", "blank lines are left alone")
-        XCTAssertEqual(apply(MarkdownFormatting.toggle(.bullets, in: bullets, selection: NSRange(location: 0, length: (bullets as NSString).length)), to: bullets), t)
-        let numbers = apply(MarkdownFormatting.toggle(.numbers, in: bullets, selection: NSRange(location: 0, length: (bullets as NSString).length)), to: bullets)
+        XCTAssertEqual(
+            apply(
+                MarkdownFormatting.toggle(.bullets, in: bullets, selection: NSRange(location: 0, length: (bullets as NSString).length)),
+                to: bullets), t)
+        let numbers = apply(
+            MarkdownFormatting.toggle(.numbers, in: bullets, selection: NSRange(location: 0, length: (bullets as NSString).length)),
+            to: bullets)
         XCTAssertEqual(numbers, "1. one\n2. two\n\n3. three", "a bulleted run becomes a numbered one")
         let tasks = apply(MarkdownFormatting.toggle(.tasks, in: "a\nb", selection: NSRange(location: 0, length: 3)), to: "a\nb")
         XCTAssertEqual(tasks, "- [ ] a\n- [ ] b")
-        XCTAssertEqual(apply(MarkdownFormatting.toggle(.tasks, in: "- [x] a\n- [ ] b", selection: NSRange(location: 0, length: 15)), to: "- [x] a\n- [ ] b"), "a\nb")
+        XCTAssertEqual(
+            apply(
+                MarkdownFormatting.toggle(.tasks, in: "- [x] a\n- [ ] b", selection: NSRange(location: 0, length: 15)),
+                to: "- [x] a\n- [ ] b"), "a\nb")
         let one = MarkdownFormatting.toggle(.bullets, in: "x\ny", selection: NSRange(location: 2, length: 0))
         XCTAssertEqual(apply(one, to: "x\ny"), "x\n- y", "no selection: the caret's line only")
     }

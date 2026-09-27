@@ -73,8 +73,10 @@ public struct FuzzyQuery: Equatable, Sendable {
             for piece in split {
                 let (pn, n, nl) = Self.normalize(piece)
                 guard !n.isEmpty else { continue }
-                values.append(FuzzyQueryPiece(original: piece, originalLowercase: piece.lowercased(), pathNormalized: pn,
-                                              normalized: n, normalizedLowercase: nl, expectContiguousMatch: Self.expectsExactMatch(piece)))
+                values.append(
+                    FuzzyQueryPiece(
+                        original: piece, originalLowercase: piece.lowercased(), pathNormalized: pn,
+                        normalized: n, normalizedLowercase: nl, expectContiguousMatch: Self.expectsExactMatch(piece)))
             }
             pieces = values.isEmpty ? nil : values
         } else {
@@ -84,8 +86,9 @@ public struct FuzzyQuery: Equatable, Sendable {
 
     /// The query as a single piece — what a one-piece query scores by.
     public var piece: FuzzyQueryPiece {
-        FuzzyQueryPiece(original: original, originalLowercase: originalLowercase, pathNormalized: pathNormalized,
-                        normalized: normalized, normalizedLowercase: normalizedLowercase, expectContiguousMatch: expectContiguousMatch)
+        FuzzyQueryPiece(
+            original: original, originalLowercase: originalLowercase, pathNormalized: pathNormalized,
+            normalized: normalized, normalizedLowercase: normalizedLowercase, expectContiguousMatch: expectContiguousMatch)
     }
 
     private static func expectsExactMatch(_ s: String) -> Bool { s.hasPrefix("\"") && s.hasSuffix("\"") }
@@ -149,7 +152,9 @@ public enum FuzzyScorer {
 
     /// Scores `query` against `target`. Zero is no match; positions are the UTF-16 offsets of
     /// the matched characters, one per query character.
-    public static func score(_ target: String, query: String, queryLower: String, allowNonContiguousMatches: Bool) -> (score: Int, positions: [Int]) {
+    public static func score(_ target: String, query: String, queryLower: String, allowNonContiguousMatches: Bool) -> (
+        score: Int, positions: [Int]
+    ) {
         guard !target.isEmpty, !query.isEmpty else { return (0, []) }
         let t = Array(target.utf16)
         let q = Array(query.utf16)
@@ -177,8 +182,7 @@ public enum FuzzyScorer {
                 let diagScore = (qiGtZero && tiGtZero) ? scores[diag] : 0
                 let seqLen = (qiGtZero && tiGtZero) ? matches[diag] : 0
                 let s: Int
-                if diagScore == 0 && qiGtZero { s = 0 }
-                else { s = charScore(q[qi], ql[qi], t, tl, ti, seqLen) }
+                if diagScore == 0 && qiGtZero { s = 0 } else { s = charScore(q[qi], ql[qi], t, tl, ti, seqLen) }
                 let valid = s != 0 && diagScore + s >= leftScore
                 if valid && (allowNonContiguous || qiGtZero || startsWith(tl, ql, at: ti)) {
                     matches[current] = seqLen + 1
@@ -193,8 +197,7 @@ public enum FuzzyScorer {
         var qi = qn - 1, ti = tn - 1
         while qi >= 0 && ti >= 0 {
             let current = qi * tn + ti
-            if matches[current] == 0 { ti -= 1 }
-            else { positions.append(ti); qi -= 1; ti -= 1 }
+            if matches[current] == 0 { ti -= 1 } else { positions.append(ti); qi -= 1; ti -= 1 }
         }
         return (scores[qn * tn - 1], positions.reversed())
     }
@@ -204,25 +207,25 @@ public enum FuzzyScorer {
         var s = 1
         if seqLen > 0 { s += min(seqLen, 3) * 6 + max(0, seqLen - 3) * 3 }
         if qc == t[ti] { s += 1 }
-        if ti == 0 { s += 8 }
-        else {
+        if ti == 0 {
+            s += 8
+        } else {
             let sep = separatorBonus(t[ti - 1])
-            if sep > 0 { s += sep }
-            else if isUpper(t[ti]) && seqLen == 0 { s += 2 }
+            if sep > 0 { s += sep } else if isUpper(t[ti]) && seqLen == 0 { s += 2 }
         }
         return s
     }
 
     private static func considerEqual(_ a: UInt16, _ b: UInt16) -> Bool {
         if a == b { return true }
-        if a == 47 || a == 92 { return b == 47 || b == 92 }   // "/" and "\" are one separator
+        if a == 47 || a == 92 { return b == 47 || b == 92 }  // "/" and "\" are one separator
         return false
     }
 
     private static func separatorBonus(_ c: UInt16) -> Int {
         switch c {
-        case 47, 92: return 5                                  // / \  — prefer path separators…
-        case 95, 45, 46, 32, 39, 34, 58: return 4             // _ - . space ' " :  …over other separators
+        case 47, 92: return 5  // / \  — prefer path separators…
+        case 95, 45, 46, 32, 39, 34, 58: return 4  // _ - . space ' " :  …over other separators
         default: return 0
         }
     }
@@ -255,9 +258,10 @@ public enum FuzzyScorer {
         guard !query.normalized.isEmpty, !item.label.isEmpty else { return .none }
         let preferLabel = item.path == nil || !query.containsPathSeparator
         if let path = item.path, query.pathNormalized.caseInsensitiveCompare(path) == .orderedSame {
-            return ItemScore(score: pathIdentityScore,
-                             labelMatch: [FuzzyMatchRange(start: 0, end: item.label.utf16.count)],
-                             descriptionMatch: item.description.map { [FuzzyMatchRange(start: 0, end: $0.utf16.count)] })
+            return ItemScore(
+                score: pathIdentityScore,
+                labelMatch: [FuzzyMatchRange(start: 0, end: item.label.utf16.count)],
+                descriptionMatch: item.description.map { [FuzzyMatchRange(start: 0, end: $0.utf16.count)] })
         }
         if let pieces = query.pieces, pieces.count > 1 {
             var total = 0
@@ -274,10 +278,13 @@ public enum FuzzyScorer {
         return scoreItemSingle(item, piece: query.piece, preferLabel: preferLabel, allowNonContiguousMatches: allowNonContiguousMatches)
     }
 
-    private static func scoreItemSingle(_ item: Item, piece: FuzzyQueryPiece, preferLabel: Bool, allowNonContiguousMatches: Bool) -> ItemScore {
+    private static func scoreItemSingle(_ item: Item, piece: FuzzyQueryPiece, preferLabel: Bool, allowNonContiguousMatches: Bool)
+        -> ItemScore
+    {
         let allow = allowNonContiguousMatches && !piece.expectContiguousMatch
         if preferLabel || item.description == nil {
-            let (labelScore, positions) = score(item.label, query: piece.normalized, queryLower: piece.normalizedLowercase, allowNonContiguousMatches: allow)
+            let (labelScore, positions) = score(
+                item.label, query: piece.normalized, queryLower: piece.normalizedLowercase, allowNonContiguousMatches: allow)
             if labelScore > 0 {
                 let prefix = prefixMatch(piece.normalized, in: item.label)
                 var base: Int
@@ -293,7 +300,9 @@ public enum FuzzyScorer {
         if let description = item.description {
             let descriptionPrefix = item.path != nil ? description + "/" : description
             let prefixLength = descriptionPrefix.utf16.count
-            let (s, positions) = score(descriptionPrefix + item.label, query: piece.normalized, queryLower: piece.normalizedLowercase, allowNonContiguousMatches: allow)
+            let (s, positions) = score(
+                descriptionPrefix + item.label, query: piece.normalized, queryLower: piece.normalizedLowercase,
+                allowNonContiguousMatches: allow)
             if s > 0 {
                 var labelMatch: [FuzzyMatchRange] = [], descriptionMatch: [FuzzyMatchRange] = []
                 for h in ranges(from: positions) {
@@ -323,8 +332,11 @@ public enum FuzzyScorer {
     public static func ranges(from positions: [Int]) -> [FuzzyMatchRange] {
         var out: [FuzzyMatchRange] = []
         for p in positions {
-            if let last = out.last, last.end == p { out[out.count - 1] = FuzzyMatchRange(start: last.start, end: p + 1) }
-            else { out.append(FuzzyMatchRange(start: p, end: p + 1)) }
+            if let last = out.last, last.end == p {
+                out[out.count - 1] = FuzzyMatchRange(start: last.start, end: p + 1)
+            } else {
+                out.append(FuzzyMatchRange(start: p, end: p + 1))
+            }
         }
         return out
     }
@@ -373,8 +385,11 @@ public enum FuzzyScorer {
 
     private static func matchDistance(_ item: Item, _ score: ItemScore) -> Int {
         var start = -1, end = -1
-        if let d = score.descriptionMatch, !d.isEmpty { start = d[0].start }
-        else if let l = score.labelMatch, !l.isEmpty { start = l[0].start }
+        if let d = score.descriptionMatch, !d.isEmpty {
+            start = d[0].start
+        } else if let l = score.labelMatch, !l.isEmpty {
+            start = l[0].start
+        }
         if let l = score.labelMatch, !l.isEmpty {
             end = l[l.count - 1].end
             if let d = score.descriptionMatch, !d.isEmpty, let desc = item.description { end += desc.utf16.count }

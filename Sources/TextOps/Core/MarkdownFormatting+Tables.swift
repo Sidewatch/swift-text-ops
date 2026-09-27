@@ -84,7 +84,8 @@ extension MarkdownFormatting {
         var i = 0
         while i < lines.count {
             guard isTableLine(lines[i]), i + 1 < lines.count, separatorAlignments(lines[i + 1]) != nil,
-                  let t = table(in: text, selection: NSRange(location: starts[i], length: 0)) else { i += 1; continue }
+                let t = table(in: text, selection: NSRange(location: starts[i], length: 0))
+            else { i += 1; continue }
             out.append(t)
             i += (lines[i...].prefix { isTableLine($0) }.count)
         }
@@ -106,8 +107,9 @@ extension MarkdownFormatting {
             .trimmingCharacters(in: .whitespaces)
         t.rows[row][column] = cell
         let rendered = render(t)
-        return Edit(range: t.range, replacement: rendered,
-                    selection: NSRange(location: t.range.location + cellOffset(in: t, rendered: rendered, row: row, column: column), length: 0))
+        return Edit(
+            range: t.range, replacement: rendered,
+            selection: NSRange(location: t.range.location + cellOffset(in: t, rendered: rendered, row: row, column: column), length: 0))
     }
 
     /// A line that belongs to a table: not blank, with an unescaped `|`.
@@ -129,7 +131,11 @@ extension MarkdownFormatting {
         let trimmed = parts.map { $0.trimmingCharacters(in: .whitespaces) }
         var out = trimmed
         if out.first == "" && line.trimmingCharacters(in: .whitespaces).hasPrefix("|") { out.removeFirst() }
-        if out.last == "" && line.trimmingCharacters(in: .whitespaces).hasSuffix("|") && !line.trimmingCharacters(in: .whitespaces).hasSuffix("\\|") { out.removeLast() }
+        if out.last == "" && line.trimmingCharacters(in: .whitespaces).hasSuffix("|")
+            && !line.trimmingCharacters(in: .whitespaces).hasSuffix("\\|")
+        {
+            out.removeLast()
+        }
         return out
     }
 
@@ -160,7 +166,7 @@ extension MarkdownFormatting {
         let end = min(max(0, offset), ns.length)
         while i < end {
             let c = ns.character(at: i)
-            if c == 0x5C { i += 2; continue }   // backslash: skip the escaped character
+            if c == 0x5C { i += 2; continue }  // backslash: skip the escaped character
             if c == 0x7C { pipes += 1 }
             i += 1
         }
@@ -176,14 +182,16 @@ extension MarkdownFormatting {
         func line(_ cells: [String]) -> String {
             "| " + cells.enumerated().map { c, cell in pad(cell, to: widths[c], table.alignments[c]) }.joined(separator: " | ") + " |"
         }
-        let separator = "| " + widths.enumerated().map { c, w in
-            switch table.alignments[c] {
-            case .none: return String(repeating: "-", count: w)
-            case .left: return ":" + String(repeating: "-", count: w - 1)
-            case .right: return String(repeating: "-", count: w - 1) + ":"
-            case .center: return ":" + String(repeating: "-", count: w - 2) + ":"
-            }
-        }.joined(separator: " | ") + " |"
+        let separator =
+            "| "
+            + widths.enumerated().map { c, w in
+                switch table.alignments[c] {
+                case .none: return String(repeating: "-", count: w)
+                case .left: return ":" + String(repeating: "-", count: w - 1)
+                case .right: return String(repeating: "-", count: w - 1) + ":"
+                case .center: return ":" + String(repeating: "-", count: w - 2) + ":"
+                }
+            }.joined(separator: " | ") + " |"
         guard let header = table.rows.first else { return separator }
         return ([line(header), separator] + table.rows.dropFirst().map(line)).joined(separator: "\n")
     }
@@ -207,25 +215,30 @@ extension MarkdownFormatting {
         switch edit {
         case .format: break
         case .insertRowBelow: t.rows.insert(empty, at: row + 1); row += 1
-        case .insertRowAbove: row = max(1, row); t.rows.insert(empty, at: row)   // never above the header
+        case .insertRowAbove: row = max(1, row); t.rows.insert(empty, at: row)  // never above the header
         case .deleteRow:
             guard row > 0 else { return nil }
             t.rows.remove(at: row)
             row = min(row, t.rows.count - 1)
         case .insertColumnBefore, .insertColumnAfter:
             let at = edit == .insertColumnBefore ? column : column + 1
-            t.rows = t.rows.map { var r = $0; r.insert("", at: at); return r }
+            t.rows = t.rows.map {
+                var r = $0; r.insert("", at: at); return r
+            }
             t.alignments.insert(.none, at: at)
             column = at
         case .deleteColumn:
             guard t.columns > 1 else { return nil }
-            t.rows = t.rows.map { var r = $0; r.remove(at: column); return r }
+            t.rows = t.rows.map {
+                var r = $0; r.remove(at: column); return r
+            }
             t.alignments.remove(at: column)
             column = min(column, t.columns - 1)
         }
         let rendered = render(t)
-        return Edit(range: t.range, replacement: rendered,
-                    selection: NSRange(location: t.range.location + cellOffset(in: t, rendered: rendered, row: row, column: column), length: 0))
+        return Edit(
+            range: t.range, replacement: rendered,
+            selection: NSRange(location: t.range.location + cellOffset(in: t, rendered: rendered, row: row, column: column), length: 0))
     }
 
     /// Where the text of cell (`row`, `column`) starts in `rendered`.
@@ -250,18 +263,22 @@ extension MarkdownFormatting {
         let cols = max(1, columns)
         let header = (1...cols).map { "Column \($0)" }
         let body = Array(repeating: Array(repeating: "", count: cols), count: max(0, rows))
-        let rendered = render(Table(range: NSRange(location: 0, length: 0), rows: [header] + body,
-                                    alignments: Array(repeating: .none, count: cols), row: 0, column: 0))
+        let rendered = render(
+            Table(
+                range: NSRange(location: 0, length: 0), rows: [header] + body,
+                alignments: Array(repeating: .none, count: cols), row: 0, column: 0))
         let lineRange = ns.lineRange(for: NSRange(location: sel.location, length: 0))
         var line = ns.substring(with: lineRange)
         let hadNewline = line.hasSuffix("\n")
         if hadNewline { line.removeLast() }
         if isBlank(line) {
-            return Edit(range: lineRange, replacement: rendered + (hadNewline ? "\n" : ""),
-                        selection: NSRange(location: lineRange.location + 2, length: (header[0] as NSString).length))
+            return Edit(
+                range: lineRange, replacement: rendered + (hadNewline ? "\n" : ""),
+                selection: NSRange(location: lineRange.location + 2, length: (header[0] as NSString).length))
         }
         let end = lineRange.location + (line as NSString).length
-        return Edit(range: NSRange(location: end, length: 0), replacement: "\n\n" + rendered,
-                    selection: NSRange(location: end + 4, length: (header[0] as NSString).length))
+        return Edit(
+            range: NSRange(location: end, length: 0), replacement: "\n\n" + rendered,
+            selection: NSRange(location: end + 4, length: (header[0] as NSString).length))
     }
 }

@@ -18,7 +18,8 @@ final class WholeWordTests: XCTestCase {
 
     private func matches(_ query: String, in text: String, isRegex: Bool = false) -> Int {
         guard let p = WholeWord.pattern(for: query, isRegex: isRegex),
-              let re = try? NSRegularExpression(pattern: p) else { return -1 }
+            let re = try? NSRegularExpression(pattern: p)
+        else { return -1 }
         return re.numberOfMatches(in: text, range: NSRange(text.startIndex..., in: text))
     }
 
@@ -32,8 +33,9 @@ final class WholeWordTests: XCTestCase {
     /// sides of `==` are spaces and `\b` needs a word character on one side.
     func testOperatorQueriesStillMatch() {
         for op in ["==", "->", "+=", "!", "&&", "<=", "?？".prefix(1).description] {
-            XCTAssertGreaterThan(matches(op, in: "a \(op) b"), 0,
-                                 "whole-word search for '\(op)' must not silently match nothing")
+            XCTAssertGreaterThan(
+                matches(op, in: "a \(op) b"), 0,
+                "whole-word search for '\(op)' must not silently match nothing")
         }
     }
 

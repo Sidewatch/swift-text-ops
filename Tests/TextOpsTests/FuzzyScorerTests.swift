@@ -14,7 +14,7 @@ import XCTest
 final class FuzzyScorerTests: XCTestCase {
     // The test file's ResourceAccessor: label = basename, description = dirname, path = whole.
     private func res(_ relativeOrAbsolute: String) -> FuzzyScorer.Item {
-        let path = relativeOrAbsolute.hasPrefix("/") ? relativeOrAbsolute : "/" + relativeOrAbsolute   // URI.file() makes paths absolute
+        let path = relativeOrAbsolute.hasPrefix("/") ? relativeOrAbsolute : "/" + relativeOrAbsolute  // URI.file() makes paths absolute
         let parts = path.split(separator: "/", omittingEmptySubsequences: false).map(String.init)
         let label = parts.last ?? path
         let dir = parts.dropLast()
@@ -23,7 +23,9 @@ final class FuzzyScorerTests: XCTestCase {
     }
     private func score(_ target: String, _ query: String, _ allowNonContiguous: Bool? = nil) -> (score: Int, positions: [Int]) {
         let q = FuzzyQuery(query)
-        return FuzzyScorer.score(target, query: q.normalized, queryLower: q.normalizedLowercase, allowNonContiguousMatches: allowNonContiguous ?? !q.expectContiguousMatch)
+        return FuzzyScorer.score(
+            target, query: q.normalized, queryLower: q.normalizedLowercase,
+            allowNonContiguousMatches: allowNonContiguous ?? !q.expectContiguousMatch)
     }
     private func scoreItem(_ item: FuzzyScorer.Item, _ query: String, _ allow: Bool = true) -> FuzzyScorer.ItemScore {
         FuzzyScorer.scoreItem(item, query: FuzzyQuery(query), allowNonContiguousMatches: allow)
@@ -34,7 +36,9 @@ final class FuzzyScorerTests: XCTestCase {
         let scored = items.map { ($0, FuzzyScorer.scoreItem($0, query: q, allowNonContiguousMatches: true)) }
         return scored.sorted { FuzzyScorer.compare($0.0, $0.1, $1.0, $1.1, query: q) == .orderedAscending }.map { $0.0.path ?? $0.0.label }
     }
-    private func assertOrder(_ paths: [String], _ query: String, _ expectedFirst: [String], file: StaticString = #filePath, line: UInt = #line) {
+    private func assertOrder(
+        _ paths: [String], _ query: String, _ expectedFirst: [String], file: StaticString = #filePath, line: UInt = #line
+    ) {
         let items = paths.map(res)
         let expected = expectedFirst.map { $0.hasPrefix("/") ? $0 : "/" + $0 }
         for permutation in [items, items.reversed()] {
@@ -65,7 +69,8 @@ final class FuzzyScorerTests: XCTestCase {
 
     func testScoreItemMatchesAreProper() {
         let r = res("/xyz/some/path/someFile123.txt")
-        XCTAssertEqual(FuzzyScorer.scoreItem(FuzzyScorer.Item(label: ""), query: FuzzyQuery("something"), allowNonContiguousMatches: true).score, 0)
+        XCTAssertEqual(
+            FuzzyScorer.scoreItem(FuzzyScorer.Item(label: ""), query: FuzzyQuery("something"), allowNonContiguousMatches: true).score, 0)
         let identity = scoreItem(r, r.path!)
         XCTAssertEqual(identity.score, FuzzyScorer.pathIdentityScore)
         XCTAssertEqual(identity.descriptionMatch, [FuzzyMatchRange(start: 0, end: r.description!.utf16.count)])
@@ -122,7 +127,9 @@ final class FuzzyScorerTests: XCTestCase {
         XCTAssertEqual(scoreItem(res("etem"), "teem").score, 0)
         XCTAssertEqual(scoreItem(res("ede"), "de").labelMatch, [FuzzyMatchRange(start: 1, end: 3)])
         let s = scoreItem(res("/src/vs/editor/browser/viewParts/lineNumbers/flipped-cursor-2x.svg"), "debug")
-        XCTAssertEqual(s.descriptionMatch, [FuzzyMatchRange(start: 9, end: 10), FuzzyMatchRange(start: 36, end: 37), FuzzyMatchRange(start: 40, end: 41)])
+        XCTAssertEqual(
+            s.descriptionMatch,
+            [FuzzyMatchRange(start: 9, end: 10), FuzzyMatchRange(start: 36, end: 37), FuzzyMatchRange(start: 40, end: 41)])
         XCTAssertEqual(s.labelMatch, [FuzzyMatchRange(start: 9, end: 10), FuzzyMatchRange(start: 20, end: 21)])
     }
 
@@ -145,8 +152,11 @@ final class FuzzyScorerTests: XCTestCase {
     private let abc = ["/some/path/fileA.txt", "/some/path/other/fileB.txt", "/unrelated/some/path/other/fileC.txt"]
 
     func testCompareIdentity() {
-        assertOrder(abc, "/some/path/fileA.txt", ["/some/path/fileA.txt", "/some/path/other/fileB.txt", "/unrelated/some/path/other/fileC.txt"])
-        assertOrder(abc, "/some/path/other/fileB.txt", ["/some/path/other/fileB.txt", "/some/path/fileA.txt", "/unrelated/some/path/other/fileC.txt"])
+        assertOrder(
+            abc, "/some/path/fileA.txt", ["/some/path/fileA.txt", "/some/path/other/fileB.txt", "/unrelated/some/path/other/fileC.txt"])
+        assertOrder(
+            abc, "/some/path/other/fileB.txt",
+            ["/some/path/other/fileB.txt", "/some/path/fileA.txt", "/unrelated/some/path/other/fileC.txt"])
     }
     func testCompareBasenamePrefix() {
         assertOrder(abc, "fileA.txt", ["/some/path/fileA.txt", "/some/path/other/fileB.txt", "/unrelated/some/path/other/fileC.txt"])
@@ -171,64 +181,110 @@ final class FuzzyScorerTests: XCTestCase {
     }
     func testComparePreferShorterPaths() {
         assertOrder(abc, "somepath", ["/some/path/fileA.txt", "/some/path/other/fileB.txt", "/unrelated/some/path/other/fileC.txt"])
-        assertOrder(["config/test/t1.js", "config/test.js", "config/test/t2.js"], "co/te", ["config/test.js", "config/test/t1.js", "config/test/t2.js"])
+        assertOrder(
+            ["config/test/t1.js", "config/test.js", "config/test/t2.js"], "co/te",
+            ["config/test.js", "config/test/t1.js", "config/test/t2.js"])
     }
     func testComparePreferLabelOverDescription() {
-        assertOrder(["parts/quick/arrow-left-dark.svg", "parts/quickopen/quickopen.ts"], "partsquick", ["parts/quickopen/quickopen.ts", "parts/quick/arrow-left-dark.svg"])
+        assertOrder(
+            ["parts/quick/arrow-left-dark.svg", "parts/quickopen/quickopen.ts"], "partsquick",
+            ["parts/quickopen/quickopen.ts", "parts/quick/arrow-left-dark.svg"])
     }
     func testComparePreferCamelCase() {
         for q in ["npe", "NPE"] {
-            assertOrder(["config/test/NullPointerException.java", "config/test/nopointerexception.java"], q, ["config/test/NullPointerException.java", "config/test/nopointerexception.java"])
+            assertOrder(
+                ["config/test/NullPointerException.java", "config/test/nopointerexception.java"], q,
+                ["config/test/NullPointerException.java", "config/test/nopointerexception.java"])
         }
     }
     func testComparePreferCompactMatches() {
-        assertOrder(["config/test/openthisAnythingHandler.js", "config/test/openthisisnotsorelevantforthequeryAnyHand.js"], "AH", ["config/test/openthisisnotsorelevantforthequeryAnyHand.js"])
+        assertOrder(
+            ["config/test/openthisAnythingHandler.js", "config/test/openthisisnotsorelevantforthequeryAnyHand.js"], "AH",
+            ["config/test/openthisisnotsorelevantforthequeryAnyHand.js"])
         assertOrder(["config/test/examasdaple.js", "config/test/exampleasdaasd.ts"], "xp", ["config/test/exampleasdaasd.ts"])
-        assertOrder(["config/test/examasdaple/file.js", "config/test/exampleasdaasd/file.ts"], "xp", ["config/test/exampleasdaasd/file.ts"])
+        assertOrder(
+            ["config/test/examasdaple/file.js", "config/test/exampleasdaasd/file.ts"], "xp", ["config/test/exampleasdaasd/file.ts"])
         assertOrder(["config/example/thisfile.ts", "config/24234243244/example/file.js"], "exfile", ["config/24234243244/example/file.js"])
     }
     func testCompareAvoidMatchScattering() {
-        let mods = ["node_modules1/bundle/lib/model/modules/ot1/index.js", "node_modules1/bundle/lib/model/modules/un1/index.js",
-                    "node_modules1/bundle/lib/model/modules/modu1/index.js", "node_modules1/bundle/lib/model/modules/oddl1/index.js"]
+        let mods = [
+            "node_modules1/bundle/lib/model/modules/ot1/index.js", "node_modules1/bundle/lib/model/modules/un1/index.js",
+            "node_modules1/bundle/lib/model/modules/modu1/index.js", "node_modules1/bundle/lib/model/modules/oddl1/index.js",
+        ]
         assertOrder(mods, "modu1/index.js", ["node_modules1/bundle/lib/model/modules/modu1/index.js"])
         assertOrder(mods, "un1/index.js", ["node_modules1/bundle/lib/model/modules/un1/index.js"])
-        assertOrder(["app/containers/Services/NetworkData/ServiceDetails/ServiceLoad/index.js",
-                     "app/containers/Services/NetworkData/ServiceDetails/ServiceDistribution/index.js",
-                     "app/containers/Services/NetworkData/ServiceDetailTabs/ServiceTabs/StatVideo/index.js"], "StatVideoindex",
-                    ["app/containers/Services/NetworkData/ServiceDetailTabs/ServiceTabs/StatVideo/index.js"])
-        assertOrder(["src/build-helper/store/redux.ts", "src/repository/store/redux.ts"], "reproreduxts", ["src/repository/store/redux.ts"])
-        assertOrder(["photobook/src/components/AddPagesButton/index.js", "photobook/src/components/ApprovalPageHeader/index.js",
-                     "photobook/src/canvasComponents/BookPage/index.js"], "bookpageIndex", ["photobook/src/canvasComponents/BookPage/index.js"])
+        assertOrder(
+            [
+                "app/containers/Services/NetworkData/ServiceDetails/ServiceLoad/index.js",
+                "app/containers/Services/NetworkData/ServiceDetails/ServiceDistribution/index.js",
+                "app/containers/Services/NetworkData/ServiceDetailTabs/ServiceTabs/StatVideo/index.js",
+            ], "StatVideoindex",
+            ["app/containers/Services/NetworkData/ServiceDetailTabs/ServiceTabs/StatVideo/index.js"])
+        assertOrder(
+            ["src/build-helper/store/redux.ts", "src/repository/store/redux.ts"], "reproreduxts", ["src/repository/store/redux.ts"])
+        assertOrder(
+            [
+                "photobook/src/components/AddPagesButton/index.js", "photobook/src/components/ApprovalPageHeader/index.js",
+                "photobook/src/canvasComponents/BookPage/index.js",
+            ], "bookpageIndex", ["photobook/src/canvasComponents/BookPage/index.js"])
         assertOrder(["ui/src/utils/constants.js", "ui/src/ui/Icons/index.js"], "ui/icons", ["ui/src/ui/Icons/index.js"])
         assertOrder(["ui/src/components/IDInput/index.js", "ui/src/ui/Input/index.js"], "ui/input/index", ["ui/src/ui/Input/index.js"])
-        assertOrder(["django/contrib/sites/locale/ga/LC_MESSAGES/django.mo", "django/core/signals.py"], "djancosig", ["django/core/signals.py"])
-        assertOrder(["adsys/protected/config.php", "adsys/protected/framework/smarty/sysplugins/smarty_internal_config.php", "duowanVideo/wap/protected/config.php"],
-                    "protectedconfig.php", ["adsys/protected/config.php", "duowanVideo/wap/protected/config.php", "adsys/protected/framework/smarty/sysplugins/smarty_internal_config.php"])
-        assertOrder(["pkg/search/gradient/testdata/constraint_attrMatchString.yml", "cmd/gradient/main.go"], "gradientmain", ["cmd/gradient/main.go"])
+        assertOrder(
+            ["django/contrib/sites/locale/ga/LC_MESSAGES/django.mo", "django/core/signals.py"], "djancosig", ["django/core/signals.py"])
+        assertOrder(
+            [
+                "adsys/protected/config.php", "adsys/protected/framework/smarty/sysplugins/smarty_internal_config.php",
+                "duowanVideo/wap/protected/config.php",
+            ],
+            "protectedconfig.php",
+            [
+                "adsys/protected/config.php", "duowanVideo/wap/protected/config.php",
+                "adsys/protected/framework/smarty/sysplugins/smarty_internal_config.php",
+            ])
+        assertOrder(
+            ["pkg/search/gradient/testdata/constraint_attrMatchString.yml", "cmd/gradient/main.go"], "gradientmain",
+            ["cmd/gradient/main.go"])
         assertOrder(["alpha-beta-cappa.txt", "abc.txt"], "abc", ["abc.txt"])
         assertOrder(["xerxes-yak-zubba/index.js", "xyz/index.js"], "xyz", ["xyz/index.js"])
         assertOrder(["AssymblyInfo.cs", "IAsynchronousTask.java"], "async", ["IAsynchronousTask.java"])
-        assertOrder(["static/app/source/angluar/-admin/-organization/-settings/layout/layout.js",
-                     "static/app/source/angular/-admin/-project/-settings/_settings/settings.js"], "partisettings",
-                    ["static/app/source/angular/-admin/-project/-settings/_settings/settings.js"])
-        assertOrder(["Trilby.TrilbyTV.Web.Portal/Views/Systems/Index.cshtml", "Trilby.TrilbyTV.Web.Portal/Areas/Admins/Views/Tips/Index.cshtml"],
-                    "tipsindex.cshtml", ["Trilby.TrilbyTV.Web.Portal/Areas/Admins/Views/Tips/Index.cshtml"])
-        assertOrder(["editor/core/components/tests/list-view-spec.js", "editor/core/components/list-view.js"], "listview", ["editor/core/components/list-view.js"])
-        assertOrder(["src/vs/workbench/contrib/files/common/explorerViewModel.ts", "src/vs/workbench/contrib/files/browser/views/explorerView.ts",
-                     "src/vs/workbench/contrib/files/browser/views/explorerViewer.ts"], "filesexplorerview.ts",
-                    ["src/vs/workbench/contrib/files/browser/views/explorerView.ts"])
+        assertOrder(
+            [
+                "static/app/source/angluar/-admin/-organization/-settings/layout/layout.js",
+                "static/app/source/angular/-admin/-project/-settings/_settings/settings.js",
+            ], "partisettings",
+            ["static/app/source/angular/-admin/-project/-settings/_settings/settings.js"])
+        assertOrder(
+            ["Trilby.TrilbyTV.Web.Portal/Views/Systems/Index.cshtml", "Trilby.TrilbyTV.Web.Portal/Areas/Admins/Views/Tips/Index.cshtml"],
+            "tipsindex.cshtml", ["Trilby.TrilbyTV.Web.Portal/Areas/Admins/Views/Tips/Index.cshtml"])
+        assertOrder(
+            ["editor/core/components/tests/list-view-spec.js", "editor/core/components/list-view.js"], "listview",
+            ["editor/core/components/list-view.js"])
+        assertOrder(
+            [
+                "src/vs/workbench/contrib/files/common/explorerViewModel.ts",
+                "src/vs/workbench/contrib/files/browser/views/explorerView.ts",
+                "src/vs/workbench/contrib/files/browser/views/explorerViewer.ts",
+            ], "filesexplorerview.ts",
+            ["src/vs/workbench/contrib/files/browser/views/explorerView.ts"])
     }
     func testComparePreferCaseMatch96122() {
         assertOrder(["lists.php", "lib/Lists.php"], "Lists.php", ["lib/Lists.php"])
     }
     func testComparePreferShorterMatch103052() {
-        for q in ["foo bar", "foobar"] { assertOrder(["app/emails/foo.bar.js", "app/emails/other-footer.other-bar.js"], q, ["app/emails/foo.bar.js", "app/emails/other-footer.other-bar.js"]) }
+        for q in ["foo bar", "foobar"] {
+            assertOrder(
+                ["app/emails/foo.bar.js", "app/emails/other-footer.other-bar.js"], q,
+                ["app/emails/foo.bar.js", "app/emails/other-footer.other-bar.js"])
+        }
         for q in ["payment model", "paymentmodel"] {
-            assertOrder(["app/components/payment/payment.model.js", "app/components/online-payments-history/online-payments-history.model.js"], q,
-                        ["app/components/payment/payment.model.js", "app/components/online-payments-history/online-payments-history.model.js"])
+            assertOrder(
+                ["app/components/payment/payment.model.js", "app/components/online-payments-history/online-payments-history.model.js"], q,
+                ["app/components/payment/payment.model.js", "app/components/online-payments-history/online-payments-history.model.js"])
         }
         for q in ["color js", "colorjs"] {
-            assertOrder(["app/constants/color.js", "app/components/model/input/pick-avatar-color.js"], q, ["app/constants/color.js", "app/components/model/input/pick-avatar-color.js"])
+            assertOrder(
+                ["app/constants/color.js", "app/components/model/input/pick-avatar-color.js"], q,
+                ["app/constants/color.js", "app/components/model/input/pick-avatar-color.js"])
         }
     }
     func testComparePreferStrictCasePrefix() {
@@ -237,26 +293,33 @@ final class FuzzyScorerTests: XCTestCase {
         assertOrder(p, "color", ["app/constants/color.js", "app/components/model/input/Color.js"])
     }
     func testComparePreferPrefix103052() {
-        assertOrder(["test/smoke/src/main.ts", "src/vs/editor/common/services/semantikTokensProviderStyling.ts"], "smoke main.ts",
-                    ["test/smoke/src/main.ts", "src/vs/editor/common/services/semantikTokensProviderStyling.ts"])
+        assertOrder(
+            ["test/smoke/src/main.ts", "src/vs/editor/common/services/semantikTokensProviderStyling.ts"], "smoke main.ts",
+            ["test/smoke/src/main.ts", "src/vs/editor/common/services/semantikTokensProviderStyling.ts"])
     }
     func testCompareMultipleQueryBoosts() {
         for q in ["workbench.ts browser", "browser workbench.ts", "browser workbench", "workbench browser"] {
-            assertOrder(["src/vs/workbench/services/host/browser/browserHostService.ts", "src/vs/workbench/browser/workbench.ts"], q,
-                        ["src/vs/workbench/browser/workbench.ts", "src/vs/workbench/services/host/browser/browserHostService.ts"])
+            assertOrder(
+                ["src/vs/workbench/services/host/browser/browserHostService.ts", "src/vs/workbench/browser/workbench.ts"], q,
+                ["src/vs/workbench/browser/workbench.ts", "src/vs/workbench/services/host/browser/browserHostService.ts"])
         }
         for q in ["window node", "window.ts node"] {
-            assertOrder(["src/vs/workbench/node/actions/windowActions.ts", "src/vs/workbench/electron-node/window.ts"], q,
-                        ["src/vs/workbench/electron-node/window.ts", "src/vs/workbench/node/actions/windowActions.ts"])
+            assertOrder(
+                ["src/vs/workbench/node/actions/windowActions.ts", "src/vs/workbench/electron-node/window.ts"], q,
+                ["src/vs/workbench/electron-node/window.ts", "src/vs/workbench/node/actions/windowActions.ts"])
         }
         assertOrder(["mesh_editor_lifetime_job.h", "lifetime_job.h"], "m life, life m", ["lifetime_job.h", "mesh_editor_lifetime_job.h"])
     }
     func testCompareSkipLabelPreferenceWithPathSep() {
-        assertOrder(["djangosite/ufrela/def.py", "djangosite/urls/default.py"], "url/def", ["djangosite/urls/default.py", "djangosite/ufrela/def.py"])
+        assertOrder(
+            ["djangosite/ufrela/def.py", "djangosite/urls/default.py"], "url/def",
+            ["djangosite/urls/default.py", "djangosite/ufrela/def.py"])
     }
     func testCompareBoostConsecutiveMatchesAtBeginning() {
-        assertOrder(["src/vs/server/node/extensionHostStatusService.ts", "src/vs/workbench/browser/parts/notifications/notificationsStatus.ts"], "notStatus",
-                    ["src/vs/workbench/browser/parts/notifications/notificationsStatus.ts", "src/vs/server/node/extensionHostStatusService.ts"])
+        assertOrder(
+            ["src/vs/server/node/extensionHostStatusService.ts", "src/vs/workbench/browser/parts/notifications/notificationsStatus.ts"],
+            "notStatus",
+            ["src/vs/workbench/browser/parts/notifications/notificationsStatus.ts", "src/vs/server/node/extensionHostStatusService.ts"])
     }
 
     // MARK: - Query preparation and quoting
@@ -295,6 +358,8 @@ final class FuzzyScorerTests: XCTestCase {
     }
 
     func testRangesFromPositionsMergeConsecutive() {
-        XCTAssertEqual(FuzzyScorer.ranges(from: [0, 1, 2, 5, 9, 10]), [FuzzyMatchRange(start: 0, end: 3), FuzzyMatchRange(start: 5, end: 6), FuzzyMatchRange(start: 9, end: 11)])
+        XCTAssertEqual(
+            FuzzyScorer.ranges(from: [0, 1, 2, 5, 9, 10]),
+            [FuzzyMatchRange(start: 0, end: 3), FuzzyMatchRange(start: 5, end: 6), FuzzyMatchRange(start: 9, end: 11)])
     }
 }

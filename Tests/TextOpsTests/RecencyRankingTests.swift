@@ -39,7 +39,8 @@ final class RecencyRankingTests: XCTestCase {
         RecencyRanking(key: "k", defaults: defaults).record("x")
         let later = RecencyRanking(key: "k", defaults: defaults)
         later.record("y")
-        XCTAssertEqual(later.ordered(["x", "y", "z"], by: { $0 }), ["y", "x", "z"],
-                       "the sequence resumes above what was stored, so the new choice outranks the old")
+        XCTAssertEqual(
+            later.ordered(["x", "y", "z"], by: { $0 }), ["y", "x", "z"],
+            "the sequence resumes above what was stored, so the new choice outranks the old")
     }
 }
