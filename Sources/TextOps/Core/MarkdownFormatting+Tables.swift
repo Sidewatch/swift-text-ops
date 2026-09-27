@@ -6,6 +6,7 @@
 //  delete rows and columns, and insert a new one.
 //
 //  Created by David Sherlock on 9/22/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

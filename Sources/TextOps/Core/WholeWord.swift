@@ -5,6 +5,7 @@
 //  Building the `\b`-anchored pattern for a "whole word" search, without the trap.
 //
 //  Created by David Sherlock on 8/5/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

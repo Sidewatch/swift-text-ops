@@ -1,11 +1,12 @@
 //
 //  MarkdownFormattingTests.swift
-//  Tests for TextOps.MarkdownFormatting
+//  TextOpsTests
 //
 //  Inline styles toggle, block styles act per line and toggle off, a link wraps, and Return
 //  continues or ends a list.
 //
 //  Created by David Sherlock on 9/22/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import XCTest

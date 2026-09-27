@@ -1,11 +1,12 @@
 //
 //  EditorConfigTests.swift
-//  TextOps
+//  TextOpsTests
 //
 //  Tests for `EditorConfig`: glob matching, and resolution across real `.editorconfig` files
 //  written to a temp tree.
 //
 //  Created by David Sherlock on 9/13/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import XCTest

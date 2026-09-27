@@ -6,6 +6,7 @@
 //  positions, item scoring over label/description/path, and the comparator.
 //
 //  Created by David Sherlock on 9/20/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

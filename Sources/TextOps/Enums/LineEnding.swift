@@ -1,10 +1,11 @@
 //
 //  LineEnding.swift
-//  SwiftTextOps
+//  TextOps
 //
 //  The three line terminators a text can use, so a transform can put back what it found.
 //
 //  Created by David Sherlock on 7/25/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

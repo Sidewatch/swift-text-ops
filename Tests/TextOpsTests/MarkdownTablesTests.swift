@@ -1,11 +1,14 @@
 //
 //  MarkdownTablesTests.swift
+//  TextOpsTests
+//
 //  Tests for TextOps.MarkdownFormatting (tables)
 //
 //  The pipe table at the caret is read as cells, formatted aligned, grown and shrunk by a row or
 //  a column, and a new one is inserted on its own paragraph.
 //
 //  Created by David Sherlock on 9/22/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import XCTest

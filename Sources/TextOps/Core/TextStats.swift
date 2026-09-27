@@ -1,10 +1,11 @@
 //
 //  TextStats.swift
-//  SwiftTextOps
+//  TextOps
 //
 //  Line / word / character counts for a live readout beside a list.
 //
 //  Created by David Sherlock on 7/25/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

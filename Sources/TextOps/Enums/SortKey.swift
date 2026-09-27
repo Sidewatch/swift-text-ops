@@ -1,10 +1,11 @@
 //
 //  SortKey.swift
-//  SwiftTextOps
+//  TextOps
 //
 //  What a line is sorted *by* — its text, its leading number, or its length.
 //
 //  Created by David Sherlock on 7/25/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

@@ -1,11 +1,12 @@
 //
 //  TextOpsTests.swift
-//  Tests for SwiftTextOps
+//  TextOpsTests
 //
 //  Tests for `LineOps`: sorts (scalar, case-insensitive, numeric, length), reverse, shuffle,
 //  dedupe, blank-line and whitespace ops, join, split and transpose.
 //
 //  Created by David Sherlock on 7/25/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import XCTest

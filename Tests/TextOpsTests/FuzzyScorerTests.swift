@@ -5,6 +5,7 @@
 //  VS Code's fuzzyScorer.test.ts, carried over: the same targets, queries and expected orders.
 //
 //  Created by David Sherlock on 9/20/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import XCTest

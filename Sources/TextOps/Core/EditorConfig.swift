@@ -5,6 +5,7 @@
 //  Reads `.editorconfig` files: the project's own answer to how a file should be indented.
 //
 //  Created by David Sherlock on 9/13/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation

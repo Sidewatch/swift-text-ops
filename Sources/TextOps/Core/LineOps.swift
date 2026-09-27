@@ -1,11 +1,12 @@
 //
 //  LineOps.swift
-//  SwiftTextOps
+//  TextOps
 //
 //  The line transforms — sort, dedupe, clean, join/split, re-case, transpose. Pure `[String]` in,
 //  `[String]` out; no Foundation state, no I/O, no mutation of the input.
 //
 //  Created by David Sherlock on 7/25/26.
+//  Copyright © 2026 ArrayPress Limited. MIT licence.
 //
 
 import Foundation
