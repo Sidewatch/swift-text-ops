@@ -13,19 +13,25 @@ import Foundation
 
 /// A half-open UTF-16 range of a match inside a label or a description.
 public struct FuzzyMatchRange: Equatable, Sendable {
+    /// The first matched UTF-16 offset.
     public let start: Int
+    /// One past the last matched UTF-16 offset.
     public let end: Int
+    /// Creates a range from `start` up to, not including, `end`.
     public init(start: Int, end: Int) { self.start = start; self.end = end }
 }
 
 /// One space-separated piece of a query, normalized the way the scorer wants it.
 public struct FuzzyQueryPiece: Equatable, Sendable {
+    /// The piece as typed.
     public let original: String
+    /// `original`, lower-cased.
     public let originalLowercase: String
     /// Backslashes turned into the platform separator, so `a\b` finds `a/b`.
     public let pathNormalized: String
     /// `pathNormalized` minus wildcards (`*`), ellipses, whitespace, quotes and a trailing `#`.
     public let normalized: String
+    /// `normalized`, lower-cased; what the scorer compares against.
     public let normalizedLowercase: String
     /// The piece was quoted: only a contiguous match counts.
     public let expectContiguousMatch: Bool
@@ -34,15 +40,24 @@ public struct FuzzyQueryPiece: Equatable, Sendable {
 /// A prepared query (VS Code's `prepareQuery`): the whole, plus its space-separated pieces
 /// when there is more than one, each scored on its own and summed.
 public struct FuzzyQuery: Equatable, Sendable {
+    /// The query as typed.
     public let original: String
+    /// `original`, lower-cased.
     public let originalLowercase: String
+    /// Backslashes turned into `/`, as ``FuzzyQueryPiece/pathNormalized``.
     public let pathNormalized: String
+    /// `pathNormalized` stripped as ``FuzzyQueryPiece/normalized`` is.
     public let normalized: String
+    /// `normalized`, lower-cased.
     public let normalizedLowercase: String
+    /// The whole query was quoted: only a contiguous match counts.
     public let expectContiguousMatch: Bool
+    /// The space-separated pieces, or nil when the query is a single piece.
     public let pieces: [FuzzyQueryPiece]?
+    /// Whether the query names a path (has a `/`), so it is also scored against the whole path.
     public let containsPathSeparator: Bool
 
+    /// Prepares `original` for scoring.
     public init(_ original: String) {
         let (pathNormalized, normalized, normalizedLowercase) = Self.normalize(original)
         self.original = original
@@ -92,27 +107,39 @@ public struct FuzzyQuery: Equatable, Sendable {
 /// for every consecutive matched character. Non-contiguous matching can be switched off (a
 /// quoted query), and then the query must appear whole.
 public enum FuzzyScorer {
+    /// The score of a query that equals the item's whole path; outranks every other match.
     public static let pathIdentityScore = 1 << 18
+    /// Added when the query is a prefix of the label.
     public static let labelPrefixScoreThreshold = 1 << 17
+    /// Added when the query matches inside the label, so label matches beat description matches.
     public static let labelScoreThreshold = 1 << 16
 
     /// The score an item got, and where in its label and description the query matched.
     public struct ItemScore: Equatable, Sendable {
+        /// The total; zero is no match.
         public var score: Int
+        /// The matched ranges in the label, for highlighting.
         public var labelMatch: [FuzzyMatchRange]?
+        /// The matched ranges in the description, for highlighting.
         public var descriptionMatch: [FuzzyMatchRange]?
+        /// Creates a score.
         public init(score: Int, labelMatch: [FuzzyMatchRange]? = nil, descriptionMatch: [FuzzyMatchRange]? = nil) {
             self.score = score; self.labelMatch = labelMatch; self.descriptionMatch = descriptionMatch
         }
+        /// No match.
         public static let none = ItemScore(score: 0)
     }
 
     /// What an item is scored on: a label (a file's name), an optional description (its
     /// folder) and an optional path (the whole thing, for the identity match).
     public struct Item: Equatable, Sendable {
+        /// The primary text, such as a file name.
         public let label: String
+        /// Secondary text, such as the containing folder.
         public let description: String?
+        /// The full path, for the identity match.
         public let path: String?
+        /// Creates an item.
         public init(label: String, description: String? = nil, path: String? = nil) {
             self.label = label; self.description = description; self.path = path
         }

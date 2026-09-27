@@ -28,13 +28,17 @@ extension MarkdownFormatting {
         /// The header row, then the body rows (the separator is not a row); every row has
         /// `columns` cells, trimmed, a `\|` kept as written.
         public var rows: [[String]]
+        /// Each column's alignment, one per column.
         public var alignments: [ColumnAlignment]
         /// The caret's row (0 is the header; a caret on the separator line counts as the
         /// header) and column, clamped into the table.
         public let row: Int
+        /// The caret's column, clamped into the table.
         public let column: Int
+        /// The number of columns.
         public var columns: Int { alignments.count }
 
+        /// Creates a table value.
         public init(range: NSRange, rows: [[String]], alignments: [ColumnAlignment], row: Int, column: Int) {
             self.range = range; self.rows = rows; self.alignments = alignments; self.row = row; self.column = column
         }
@@ -91,7 +95,7 @@ extension MarkdownFormatting {
     /// the header, the rest the body — laid out aligned; nil when there is no such table or
     /// cell. A `|` in the text is written `\|`, a newline as a space, so the row stays a row.
     /// The selection lands on the cell. This is what a cell edited in a rendered preview
-    /// writes back (22 Sep 2026, from Glance's cell-by-cell editing).
+    /// writes back.
     public static func table(_ tableIndex: Int, settingCell row: Int, column: Int, to text: String, in source: String) -> Edit? {
         let all = tables(in: source)
         guard all.indices.contains(tableIndex) else { return nil }

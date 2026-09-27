@@ -23,18 +23,10 @@ public enum LineOps {
 
     // MARK: - Ordering
 
-    /// Sorts lines by `key`.
+    /// Sorts lines by `key`, stably in both directions.
     ///
-    /// The sort is stable — equal lines keep their original relative order even when `descending`
-    /// is `true`. With ``SortKey/numeric``, lines containing no number are not sorted at all: they
-    /// keep their relative order and collect at the end in both directions.
-    ///
-    /// - Parameters:
-    ///   - lines: The lines to sort.
-    ///   - key: The value to compare on (default ``SortKey/alphabetical``).
-    ///   - descending: Reverse the ordering (default `false`).
-    ///   - caseInsensitive: Compare case-folded — ``SortKey/alphabetical`` only (default `false`).
-    /// - Returns: The sorted lines.
+    /// With ``SortKey/numeric``, lines containing no number keep their relative order and collect
+    /// at the end in both directions. `caseInsensitive` applies to ``SortKey/alphabetical`` only.
     public static func sort(_ lines: [String],
                             by key: SortKey = .alphabetical,
                             descending: Bool = false,
@@ -193,14 +185,8 @@ public enum LineOps {
 
     /// Removes `leading` from the start of every line and `trailing` from its end, where present.
     ///
-    /// Lines that don't carry the trigger text are left alone, so this is safe to run over a mixed
-    /// list. Both ends are considered independently.
-    ///
-    /// - Parameters:
-    ///   - lines: The lines to prune.
-    ///   - leading: Text to strip from the start of each line (default none).
-    ///   - trailing: Text to strip from the end of each line (default none).
-    /// - Returns: The pruned lines, or the input unchanged when both triggers are empty.
+    /// Lines that don't carry the text are left alone, and both ends are considered
+    /// independently; with both empty the input is returned unchanged.
     public static func prune(_ lines: [String], leading: String = "", trailing: String = "") -> [String] {
         guard !leading.isEmpty || !trailing.isEmpty else { return lines }
         return lines.map { line in
@@ -231,16 +217,10 @@ public enum LineOps {
 
     // MARK: - Transpose
 
-    /// Transposes rows into columns.
+    /// Transposes rows into columns, splitting and re-joining on `delimiter`.
     ///
-    /// Each line is split on `delimiter` into cells; the resulting grid is flipped so row *n*
-    /// becomes column *n*. Ragged rows are padded with empty cells, so the output is always
-    /// rectangular and the operation round-trips when applied twice to rectangular input.
-    ///
-    /// - Parameters:
-    ///   - lines: The rows to transpose.
-    ///   - delimiter: The cell separator, used to both split and re-join (default a tab).
-    /// - Returns: The transposed rows. Empty input, or an empty delimiter, returns the input unchanged.
+    /// Ragged rows are padded with empty cells, so the output is rectangular and round-trips
+    /// when applied twice. Empty input, or an empty delimiter, returns the input unchanged.
     public static func transpose(_ lines: [String], delimiter: String = "\t") -> [String] {
         guard !lines.isEmpty, !delimiter.isEmpty else { return lines }
 

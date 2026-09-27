@@ -11,24 +11,27 @@
 
 import Foundation
 
-/// The auto-close decision for one typed character — pure, so an editor can pin every rule
-/// without a text view. The rules are the ones that keep an auto-closer out of the way:
-///  - an opener pairs only when what follows is nothing, whitespace or a closer
-///    (`(` before `foo` must not become `()foo`);
-///  - a closer typed onto the same closer steps over it, whoever put it there;
-///  - a quote never pairs next to a word character (`don't`, `it's`, `"foo|bar`);
-///  - quotes can be disabled wholesale (prose: apostrophes are punctuation, not delimiters);
-///  - an opener over a selection wraps it;
-///  - Backspace between an empty pair removes both.
+/// The auto-close decision for one typed character, pure so every rule is testable:
+///  - an opener pairs only before nothing, whitespace or a closer (`(foo` never becomes `()foo`);
+///  - a closer typed onto the same closer steps over it; an opener over a selection wraps it;
+///  - a quote never pairs next to a word character (`don't`), and quotes can be switched off
+///    wholesale for prose; Backspace between an empty pair removes both.
 public enum AutoClose {
+    /// What the editor does with the typed character.
     public enum Action: Equatable, Sendable {
+        /// Inserts both characters with the caret between them.
         case insertPair(open: String, close: String)
+        /// Surrounds the selection with the pair.
         case wrap(open: String, close: String)
+        /// Moves the caret past the identical closer instead of typing another.
         case stepOver
+        /// Types the character as usual.
         case passThrough
     }
 
+    /// The bracket pairs, opener to closer.
     public static let brackets: [Character: Character] = ["(": ")", "[": "]", "{": "}"]
+    /// The quote characters, each its own closer.
     public static let quotes: Set<Character> = ["\"", "'", "`"]
 
     /// What to do when `typed` lands at `range` (a caret, or a selection to wrap) in `text`.

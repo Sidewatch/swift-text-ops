@@ -18,15 +18,10 @@ import Foundation
 /// the way out.
 public enum TextLines {
 
-    /// The line terminator `text` predominantly uses.
+    /// The line terminator `text` predominantly uses; ``LineEnding/lf`` when it has none.
     ///
-    /// Counts them rather than taking the first match. A single stray CR — or one CRLF pasted
-    /// into an otherwise LF file — would otherwise decide the whole document's terminator, and
-    /// every Edit ▸ Lines command would silently rewrite every line ending in the file.
-    /// A text with no terminator at all reports ``LineEnding/lf``.
-    ///
-    /// - Parameter text: The text to inspect.
-    /// - Returns: The detected terminator.
+    /// Counts them rather than taking the first match, so one stray CR or pasted CRLF cannot
+    /// decide the terminator and make a line command rewrite every line ending in the file.
     public static func detectEnding(_ text: String) -> LineEnding {
         var crlf = 0, cr = 0, lf = 0
         var previousWasCR = false
@@ -72,18 +67,10 @@ public enum TextLines {
     }
 
     /// Runs a line transform over a whole text, preserving its line terminator and its
-    /// trailing newline (or absence of one).
+    /// trailing newline (or absence of one). `body` never sees the trailing empty element.
     ///
-    /// This is the entry point a text view should call: `body` sees only real lines — never the
-    /// empty element a trailing newline produces — and the result is re-joined with whatever
-    /// terminator the input used.
-    ///
-    /// - Parameters:
-    ///   - text: The text to transform.
-    ///   - ending: The terminator to re-join with. Omit to detect it from `text` — pass the
-    ///     document's own terminator when `text` is only a slice of it.
-    ///   - body: The line transform to apply.
-    /// - Returns: The transformed text.
+    /// - Parameter ending: The terminator to re-join with; omit to detect it from `text`. Pass
+    ///   the document's own terminator when `text` is only a slice of it.
     public static func transform(_ text: String, using ending: LineEnding? = nil,
                                  _ body: ([String]) -> [String]) -> String {
         // The caller may know the DOCUMENT's terminator even when transforming a slice of it.

@@ -89,7 +89,7 @@ final class MarkdownTablesTests: XCTestCase {
     }
 
     /// Delete Row on the last body row leaves header + separator; reading that (the bar's
-    /// context does, on every caret move) crashed on an invalid closed range (22 Sep 2026).
+    /// context does, on every caret move) must not trap on an invalid closed range.
     func testAHeaderOnlyTableReadsFormatsAndGrowsARow() throws {
         let headerOnly = "| a   |     | b   |\n| --- | --- | --- |\n"
         let t = try XCTUnwrap(MarkdownFormatting.table(in: headerOnly, selection: caret("b", in: headerOnly)))

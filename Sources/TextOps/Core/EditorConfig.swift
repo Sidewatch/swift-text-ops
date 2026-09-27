@@ -27,6 +27,7 @@ public struct EditorConfigSettings: Equatable, Sendable {
     /// `insert_final_newline`.
     public var insertFinalNewline: Bool?
 
+    /// Creates settings; every omitted field means the file said nothing about it.
     public init(useSpaces: Bool? = nil, indentWidth: Int? = nil, tabWidth: Int? = nil,
                 trimTrailingWhitespace: Bool? = nil, insertFinalNewline: Bool? = nil) {
         self.useSpaces = useSpaces
@@ -99,9 +100,8 @@ public enum EditorConfig {
         let relative = relativePath(of: file, under: base)
 
         // Split on `isNewline`, never on the Character `"\n"`: in Swift `"\r\n"` is ONE Character,
-        // so `split(separator: "\n")` never divided a file authored on Windows at all — the whole
-        // file was one "line", no section header was ever seen, and it was silently ignored
-        // (18 Sep 2026). The trim is `.whitespacesAndNewlines` for the same reason.
+        // so `split(separator: "\n")` leaves a CRLF file as one "line" and it would be silently
+        // ignored. The trim is `.whitespacesAndNewlines` for the same reason.
         for rawLine in text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline) {
             let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
             if line.isEmpty || line.hasPrefix("#") || line.hasPrefix(";") { continue }

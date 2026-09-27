@@ -11,20 +11,19 @@
 
 import Foundation
 
-/// Markdown formatting as pure text edits (22 Sep 2026: Xcode's Markdown bar, "useful for quick
-/// edits"). Every call takes the text and a UTF-16 selection and returns ONE replacement plus
-/// the selection to land on — the editor applies it as one undo step. Inline styles toggle:
-/// a selection already wrapped in the marker (inside it or just around it) is unwrapped, else
-/// wrapped, and no selection means the word under the caret. Block styles act on every line
-/// the selection touches and toggle off when every line already carries them. `listContinuation`
-/// is what Return does on a list line: the next marker, or an empty item ending the list.
+/// Markdown formatting as pure text edits. Every call takes the text and a UTF-16 selection and
+/// returns ONE replacement plus the selection to land on, applied as one undo step. Inline styles
+/// toggle (no selection means the word under the caret); block styles act on every line the
+/// selection touches and toggle off when every line already carries them.
 public enum MarkdownFormatting {
+    /// An inline style, its raw value the marker that wraps the text.
     public enum Inline: String, CaseIterable, Sendable {
         case bold = "**", italic = "*", strikethrough = "~~", code = "`"
+        /// The characters written on each side of the styled text.
         public var marker: String { rawValue }
     }
 
-    /// `heading(n)` SETS level n (1…6) on the lines; `heading(0)` is "Paragraph" and strips one.
+    /// A per-line style. `heading(n)` SETS level n (1…6); `heading(0)` is "Paragraph" and strips one.
     public enum Block: Equatable, Sendable {
         case heading(Int), bullets, numbers, tasks, quote, codeBlock
     }
@@ -32,18 +31,25 @@ public enum MarkdownFormatting {
     /// What the caret sits in, for a bar that shows its state: the inline styles around the
     /// selection on its line, and the line's block kind (nil for a paragraph).
     public struct Context: Equatable, Sendable {
+        /// The inline styles whose span contains the selection.
         public var inline: Set<Inline>
+        /// The line's block kind; nil for a paragraph.
         public var block: Block?
         /// Whether the line is a row of a pipe table (`table(in:selection:)` finds one).
         public var table: Bool
+        /// Creates a context; the defaults describe a plain paragraph.
         public init(inline: Set<Inline> = [], block: Block? = nil, table: Bool = false) { self.inline = inline; self.block = block; self.table = table }
     }
 
     /// One replacement and where the selection lands afterwards. UTF-16 ranges, the editor's own.
     public struct Edit: Equatable, Sendable {
+        /// The range of the original text to replace.
         public let range: NSRange
+        /// The text written over `range`.
         public let replacement: String
+        /// The selection after the replacement, in the edited text's coordinates.
         public let selection: NSRange
+        /// Creates an edit.
         public init(range: NSRange, replacement: String, selection: NSRange) {
             self.range = range; self.replacement = replacement; self.selection = selection
         }
@@ -51,6 +57,8 @@ public enum MarkdownFormatting {
 
     // MARK: - Inline
 
+    /// Unwraps `style` when the selection (or caret word) is already wrapped in its marker, inside
+    /// or just around it; otherwise wraps it.
     public static func toggle(_ style: Inline, in text: String, selection: NSRange) -> Edit {
         let ns = text as NSString
         let marker = style.marker
@@ -86,6 +94,8 @@ public enum MarkdownFormatting {
 
     // MARK: - Block
 
+    /// Applies `block` to every line the selection touches, or removes it when every non-blank
+    /// line already carries it; the whole edited block is selected afterwards.
     public static func toggle(_ block: Block, in text: String, selection: NSRange) -> Edit {
         let ns = text as NSString
         let lines = ns.lineRange(for: clamp(selection, to: ns))
@@ -230,7 +240,9 @@ public enum MarkdownFormatting {
 
     // MARK: - Pieces
 
+    /// The kind of marker that opens a line.
     enum ListKind { case none, bullet, number, task, quote }
+    /// A line split into its indent, marker kind, marker text (trailing space included) and body.
     typealias Parts = (indent: String, kind: ListKind, marker: String, rest: String)
 
     /// The leading whitespace, the list marker and the rest of a line, or nil for a plain line.
@@ -243,6 +255,7 @@ public enum MarkdownFormatting {
         return (group(1), kind, marker, group(3))
     }
 
+    /// The leading whitespace, the `>` marker and the rest of a quote line, or nil for any other.
     static func quoteParts(_ line: String) -> Parts? {
         guard let m = quoteRegex.firstMatch(in: line, range: NSRange(location: 0, length: (line as NSString).length)) else { return nil }
         let ns = line as NSString
@@ -260,6 +273,7 @@ public enum MarkdownFormatting {
     static func isBlank(_ s: String) -> Bool { s.trimmingCharacters(in: .whitespaces).isEmpty }
     private static func leadingSpace(_ s: String) -> String { String(s.prefix { $0 == " " || $0 == "\t" }) }
 
+    /// `r` pulled inside the bounds of `ns`, so an out-of-range selection never traps.
     static func clamp(_ r: NSRange, to ns: NSString) -> NSRange {
         let loc = min(max(0, r.location), ns.length)
         return NSRange(location: loc, length: min(r.length, ns.length - loc))

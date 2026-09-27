@@ -171,13 +171,12 @@ final class EditorConfigTests: XCTestCase {
         XCTAssertTrue(resolved.isEmpty)
     }
 
-    // MARK: - Logic review, 18 Sep 2026
+    // MARK: - Edge cases
 
     func testACRLFFileIsReadLikeAnLFOne() throws {
         // An `.editorconfig` authored on Windows ends every line in CRLF. In Swift `"\r\n"` is ONE
-        // Character, so a `split(separator: "\n")` never divided the file into lines: no section
-        // header was ever seen, the whole file was silently ignored and the editor fell back to
-        // its own preference.
+        // Character, so a `split(separator: "\n")` never divides such a file into lines and the
+        // whole file would be silently ignored.
         try write("root = true\r\n\r\n[*]\r\nindent_style = space\r\nindent_size = 3\r\n", at: "")
         let resolved = EditorConfig.settings(for: scratch.appendingPathComponent("a.swift"))
         XCTAssertEqual(resolved.useSpaces, true)
