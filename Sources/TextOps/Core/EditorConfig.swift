@@ -208,7 +208,7 @@ public enum EditorConfig {
     /// Translates a glob into an anchored regular expression.
     private static func regex(for glob: String) -> Regex<AnyRegexOutput>? {
         var out = ""
-        var chars = Array(glob)
+        let chars = Array(glob)
         var i = 0
         while i < chars.count {
             let c = chars[i]
