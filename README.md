@@ -17,6 +17,7 @@ Dependency-free line transforms for a text editor — sort, dedupe, clean, join/
 - ✍️ **Markdown formatting** — `MarkdownFormatting`: inline styles that toggle (`**`, `*`, `~~`, `` ` ``, from inside or around the selection, the word at the caret when there is none), block styles per line that toggle off when every line has them (headings 1–6 and Paragraph, bulleted / numbered / task lists, quote, fenced code), a link, `listContinuation` for the Return that continues or ends a list, and `context(in:selection:)` for a bar that shows the caret's styles; every call returns one `Edit` (range, replacement, selection) for one undo step
 - 📊 **Pipe tables** — `MarkdownFormatting.table(in:selection:)` reads the table at the caret as cells with its alignments; `table(.format, …)` lays it out aligned (colons kept, cells padded per column), `.insertRowAbove/Below`, `.insertColumnBefore/After`, `.deleteRow`, `.deleteColumn` edit it around the caret's cell; `insertTable(in:selection:columns:rows:)` starts one on its own paragraph with "Column 1" selected; `tables(in:)` lists every table in order and `table(_:settingCell:column:to:in:)` sets one cell of the nth — what a cell edited in a rendered preview writes back
 - 🧭 **`.editorconfig`** — `EditorConfig.settings(for:)` resolves `indent_style`, `indent_size`, `tab_width`, `trim_trailing_whitespace` and `insert_final_newline` for a file: walks up to `root = true`, nearest file wins, sections apply in order, globs read the way the reference cores read them (`*`, `**`, `/**/`, `?`, `[…]`, `{a,b}`), CRLF files included; every field is optional, so silence is never a default
+- **Git line ↔ editor line** — `LineNumberMap(text:)`: git ends a line at `\n` only, while TextKit and `NSString.lineRange` also break on a lone `\r`, U+0085, U+2028 and U+2029, so a file holding one has every git line number below it off by one per unit; the map records the extra breaks once (20 MB of UTF-16 in about 20 ms, `memchr` sweeps over `getCharacters` chunks) and converts both ways in O(log n), 1-based, monotone, clamped past either end; `isIdentity` says when the two numberings agree
 - 🪶 **Zero dependencies** — Foundation only
 - 🍎 **Cross-platform** — iOS, macOS, tvOS, watchOS, visionOS
 
@@ -83,6 +84,17 @@ MarkdownFormatting.context(in: "## Title", selection: NSRange(location: 3, lengt
 MarkdownFormatting.table(.format, in: text, selection: caret)
 MarkdownFormatting.table(.insertColumnAfter, in: text, selection: caret)   // nil outside a table
 MarkdownFormatting.insertTable(in: text, selection: caret, columns: 3, rows: 2)
+```
+
+### Line numbers
+
+```swift
+// A diff hunk or blame row carries git's line number; the editor numbers lines the Unicode way.
+let map = LineNumberMap(text: textStorage.string as NSString)
+if map.isIdentity { /* the numbers agree, nothing to convert */ }
+map.unicodeLine(forGitLine: 2)      // "a\u{2028}b\nc\nd": git's line 2 ("c") is the editor's line 3
+map.gitLine(forUnicodeLine: 2)      // the editor's line 2 ("b") is still inside git's line 1
+map.gitLineCount, map.unicodeLineCount, map.extraBreakCount
 ```
 
 ## For agents

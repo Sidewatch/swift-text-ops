@@ -8,7 +8,8 @@ Dependency-free line transforms for a text editor — sort, dedupe, clean, join/
 
 ## Module map
 
-- `Core/` — the engine: AutoClose, LineOps, TextLines, TextStats, WholeWord, Identifier, EditorConfig (`.editorconfig` resolution: walk-up, `root`, nearest-wins, the reference cores' globs), MarkdownFormatting (inline and block toggles, link, list continuation, `context`) and MarkdownFormatting+Tables (`table(in:selection:)`, `render`, `table(_:in:selection:)` edits, `insertTable`, `tables(in:)`, `table(_:settingCell:column:to:in:)`)
+- `Core/` — the engine: AutoClose, LineOps, TextLines, TextStats, WholeWord, Identifier, EditorConfig (`.editorconfig` resolution: walk-up, `root`, nearest-wins, the reference cores' globs), MarkdownFormatting (inline and block toggles, link, list continuation, `context`) and MarkdownFormatting+Tables (`table(in:selection:)`, `render`, `table(_:in:selection:)` edits, `insertTable`, `tables(in:)`, `table(_:settingCell:column:to:in:)`), LineNumberMap (git line ↔ editor line over the extra breaks: lone CR, NEL, LS, PS)
+- `Support/` — pure helpers: LineBreakScan (one `memchr` pass over a text's UTF-16 units: the `\n` count and the git line of every extra break)
 - `Enums/` — enums with no behaviour beyond their cases and labels: LetterCase, LineEnding, SortKey
 
 ## Rules
