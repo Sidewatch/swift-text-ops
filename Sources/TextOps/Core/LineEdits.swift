@@ -104,7 +104,7 @@ public enum LineEdits {
         guard selection.length > 0, spansLines(ns, selection) else { return nil }
         let lines = ns.lineRange(for: selection)
         var out = ""
-        forEachLine(of: lines, in: ns) { line in out += unit + ns.substring(with: line) }
+        ns.forEachLine(of: lines) { line in out += unit + ns.substring(with: line) }
         return TextEdit(range: lines, replacement: out, selection: NSRange(location: lines.location, length: (out as NSString).length))
     }
 
@@ -115,7 +115,7 @@ public enum LineEdits {
         let ns = text as NSString
         let lines = ns.lineRange(for: selection)
         var out = "", changed = false
-        forEachLine(of: lines, in: ns) { line in
+        ns.forEachLine(of: lines) { line in
             let s = ns.substring(with: line)
             let drop = s.hasPrefix("\t") ? 1 : s.prefix(max(0, width)).prefix { $0 == " " }.count
             if drop > 0 { changed = true }
@@ -130,15 +130,5 @@ public enum LineEdits {
     /// Whether the selected text holds a line break of any kind (so it touches more than a run of one line's characters).
     private static func spansLines(_ ns: NSString, _ selection: NSRange) -> Bool {
         ns.substring(with: selection).rangeOfCharacter(from: .newlines) != nil
-    }
-
-    /// Calls `body` with each whole line (content and break) inside `block`, in order.
-    private static func forEachLine(of block: NSRange, in ns: NSString, _ body: (NSRange) -> Void) {
-        var at = block.location
-        while at < NSMaxRange(block) {
-            let line = ns.lineRange(for: NSRange(location: at, length: 0))
-            body(line)
-            at = NSMaxRange(line)
-        }
     }
 }

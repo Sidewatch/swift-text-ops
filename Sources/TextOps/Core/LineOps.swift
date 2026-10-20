@@ -123,6 +123,18 @@ public enum LineOps {
         return result
     }
 
+    /// The lines with the indentation they ALL share removed, so a snippet lifted out of nested code
+    /// sits flush left. The shared indent is the fewest leading spaces and tabs (counted as characters)
+    /// among the non-blank lines; blank lines do not count, and one indented less than that is kept
+    /// as it is. A `\r` left on CRLF lines is whitespace, so a blank CRLF line stays blank.
+    public static func dedent(_ lines: [String]) -> [String] {
+        let shared = lines.filter { !$0.allSatisfy(\.isWhitespace) }.map(leadingIndentCount).min() ?? 0
+        return lines.map { leadingIndentCount($0) >= shared ? String($0.dropFirst(shared)) : $0 }
+    }
+
+    /// How many leading spaces and tabs `line` has.
+    private static func leadingIndentCount(_ line: String) -> Int { line.prefix { $0 == " " || $0 == "\t" }.count }
+
     /// Strips trailing whitespace from every line.
     ///
     /// Leading indentation is untouched — only the end of each line is trimmed.
