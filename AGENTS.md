@@ -8,8 +8,9 @@ Dependency-free line transforms for a text editor — sort, dedupe, clean, join/
 
 ## Module map
 
-- `Core/` — the engine: AutoClose, LineOps, TextLines, TextStats, WholeWord, Identifier, EditorConfig (`.editorconfig` resolution: walk-up, `root`, nearest-wins, the reference cores' globs), MarkdownFormatting (inline and block toggles, link, list continuation, `context`) and MarkdownFormatting+Tables (`table(in:selection:)`, `render`, `table(_:in:selection:)` edits, `insertTable`, `tables(in:)`, `table(_:settingCell:column:to:in:)`), LineNumberMap (git line ↔ editor line over the extra breaks: lone CR, NEL, LS, PS)
-- `Support/` — pure helpers: LineBreakScan (one `memchr` pass over a text's UTF-16 units: the `\n` count and the git line of every extra break)
+- `Core/` — the engine: AutoClose, LineEdits (duplicate / move / delete / indent / unindent as one `TextEdit`, every break read through `LineTerminator` so CRLF, CR and Unicode separators behave like LF), LineOps, TextLines, TextStats, WholeWord, Identifier (+ `isIdentifier` for a whole text), EditorConfig (`.editorconfig` resolution: walk-up, `root`, nearest-wins, the reference cores' globs), MarkdownFormatting (inline and block toggles, link, list continuation, `context`) and MarkdownFormatting+Tables (`table(in:selection:)`, `render`, `table(_:in:selection:)` edits, `insertTable`, `tables(in:)`, `table(_:settingCell:column:to:in:)`), LineNumberMap (git line ↔ editor line over the extra breaks: lone CR, NEL, LS, PS)
+- `Models/` — TextEdit (a range, its replacement and the selection after; `MarkdownFormatting.Edit` is this type)
+- `Support/` — pure helpers: LineTerminator (the break ending a line, of any kind; the text's preferred one), LineBreakScan (one `memchr` pass over a text's UTF-16 units: the `\n` count and the git line of every extra break)
 - `Enums/` — enums with no behaviour beyond their cases and labels: LetterCase, LineEnding, SortKey
 
 ## Rules

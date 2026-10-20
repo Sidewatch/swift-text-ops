@@ -43,19 +43,9 @@ public enum MarkdownFormatting {
         }
     }
 
-    /// One replacement and where the selection lands afterwards. UTF-16 ranges, the editor's own.
-    public struct Edit: Equatable, Sendable {
-        /// The range of the original text to replace.
-        public let range: NSRange
-        /// The text written over `range`.
-        public let replacement: String
-        /// The selection after the replacement, in the edited text's coordinates.
-        public let selection: NSRange
-        /// Creates an edit.
-        public init(range: NSRange, replacement: String, selection: NSRange) {
-            self.range = range; self.replacement = replacement; self.selection = selection
-        }
-    }
+    /// One replacement and where the selection lands afterwards (``TextEdit``, shared with the
+    /// line commands).
+    public typealias Edit = TextEdit
 
     // MARK: - Inline
 

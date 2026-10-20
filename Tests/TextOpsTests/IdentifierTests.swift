@@ -48,4 +48,13 @@ final class IdentifierTests: XCTestCase {
         XCTAssertEqual(WholeWord.matches(of: "==", in: "a == b == c" as NSString).count, 2, "a non-word needle still matches")
         XCTAssertEqual(WholeWord.matches(of: "", in: "abc" as NSString), [])
     }
+
+    func testIsIdentifierIsTheWholeTextAsOneWord() {
+        XCTAssertTrue(Identifier.isIdentifier("count"))
+        XCTAssertTrue(Identifier.isIdentifier("$user_id"))
+        XCTAssertTrue(Identifier.isIdentifier("𝑥"), "a letter outside the BMP")
+        XCTAssertFalse(Identifier.isIdentifier(""))
+        XCTAssertFalse(Identifier.isIdentifier("a b"))
+        XCTAssertFalse(Identifier.isIdentifier("a.b"))
+    }
 }

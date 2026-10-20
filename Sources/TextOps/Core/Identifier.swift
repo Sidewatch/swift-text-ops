@@ -19,6 +19,12 @@ public enum Identifier {
         return CharacterSet.alphanumerics.contains(s) || s == "_" || s == "$"
     }
 
+    /// Whether all of `text` is one identifier: non-empty, every character alphanumeric, `_` or `$`
+    /// (judged per Unicode scalar, so a letter outside the Basic Multilingual Plane still counts).
+    public static func isIdentifier(_ text: String) -> Bool {
+        !text.isEmpty && text.unicodeScalars.allSatisfy { CharacterSet.alphanumerics.contains($0) || $0 == "_" || $0 == "$" }
+    }
+
     /// The identifier containing `index`, or nil when `index` is not on an identifier unit
     /// (or is past the end).
     public static func range(at index: Int, in ns: NSString) -> NSRange? {
