@@ -114,6 +114,12 @@ let edits = TextSearch.replaceAll("(\\d+)px", with: "$1rem", in: text, caseSensi
 
 // Several carets.
 let targets = MultiCaret.backspaceTargets(carets, in: text)    // a whole emoji or CRLF each
+
+// The gutter's empty last line follows a final break of ANY kind, a lone CR included.
+if text.endsWithLineBreak { lineCount += 1 }
+
+// Rank a picker's rows: best score first, ties in the order the rows were given.
+let rows = FuzzyScorer.rank(files, query: FuzzyQuery("main swift"), order: .scoreThenInputOrder) { $0.scorerItem }
 ```
 
 ### Line numbers

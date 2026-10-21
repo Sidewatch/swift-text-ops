@@ -52,6 +52,15 @@ final class LineStartIndexTests: XCTestCase {
         XCTAssertEqual(remap.line(7), 9)
     }
 
+    func testEveryBreakKindAtTheEndMeansAnEmptyLastLine() {
+        for text in ["a\n", "a\r\n", "a\r", "a\u{85}", "a\u{2028}", "a\u{2029}"] {
+            XCTAssertTrue((text as NSString).endsWithLineBreak, text.debugDescription)
+        }
+        XCTAssertFalse(("a" as NSString).endsWithLineBreak)
+        XCTAssertFalse(("" as NSString).endsWithLineBreak)
+        XCTAssertFalse(("a\nb" as NSString).endsWithLineBreak)
+    }
+
     /// 6,000 random edits over text holding every break kind: after each, the spliced index must equal a
     /// full rescan. Inserting `\n` after a `\r`, deleting half a CRLF and replacing across breaks are all
     /// in the mix, because those are the cases bookkeeping gets wrong.
