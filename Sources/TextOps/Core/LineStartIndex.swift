@@ -23,12 +23,8 @@ public struct LineStartIndex: Equatable, Sendable {
 
     /// The index of `text`, scanned whole.
     public init(scanning text: NSString) {
-        var out = [0]
-        var i = 0
-        while i < text.length {
-            i = NSMaxRange(text.lineRange(for: NSRange(location: i, length: 0)))
-            if i < text.length { out.append(i) }
-        }
+        var out: [Int] = []
+        Self.appendStarts(in: text, from: 0, through: text.length, to: &out)
         starts = out
     }
 
@@ -82,50 +78,67 @@ public struct LineStartIndex: Equatable, Sendable {
     /// inserted" instead double-counts on replacements.
     static func splicedStarts(_ old: [Int], edited: NSRange, delta: Int, in s: NSString) -> [Int] {
         let oldSpanEnd = edited.location + edited.length - delta
-        let editEnd = NSMaxRange(edited)
-        // The predicate reads `s[p-1]` and `s[p]` for every p in the recompute range; fetch that window
-        // ONCE as a block. `character(at:)` per position walks a text storage's NSBigMutableString tree
-        // on every call: seconds for a whole-document swap of a multi-megabyte file, against ~20 ms for
-        // one `getCharacters` read.
-        let winStart = max(0, edited.location - 1)
-        let winEnd = min(s.length, editEnd + 1)
-        var win = [unichar](repeating: 0, count: max(0, winEnd - winStart))
-        if winEnd > winStart { s.getCharacters(&win, range: NSRange(location: winStart, length: winEnd - winStart)) }
-        /// Does `p` begin a line in the post-edit text? The empty final line owns no entry, hence
-        /// `p < s.length`. Only asked for p in the recompute range, so `p - 1` and `p` are in the window.
-        func isLineStart(_ p: Int) -> Bool {
-            if p == 0 { return true }
-            guard p < s.length else { return false }
-            switch win[p - 1 - winStart] {
-            case 0x0A, 0x0085, 0x2028, 0x2029: return true
-            case 0x0D: return win[p - winStart] != 0x0A  // mid-\r\n is not a start
-            default: return false
-            }
-        }
         var starts: [Int] = []
         starts.reserveCapacity(old.count + 4)
         var i = 0
         while i < old.count, old[i] < edited.location { starts.append(old[i]); i += 1 }
-        if isLineStart(edited.location) { starts.append(edited.location) }
-        // The rest of the recompute range: p > edited.location starts a line iff the unit before it is
-        // a break. One tight pass over the window — a closure call per position was 25 ms of every
-        // whole-document swap of a 7 MB file.
-        let last = max(edited.location, editEnd)
-        if last > edited.location {
-            win.withUnsafeBufferPointer { w in
-                for p in (edited.location + 1)...last where p < s.length {
-                    let c = w[p - 1 - winStart]
-                    if c == 0x0A || c == 0x2028 || c == 0x2029 || c == 0x0085 {
-                        starts.append(p)
-                    } else if c == 0x0D, w[p - winStart] != 0x0A {
-                        starts.append(p)
-                    }
-                }
-            }
-        }
-        var t = 0
+        appendStarts(in: s, from: edited.location, through: max(edited.location, NSMaxRange(edited)), to: &starts)
+        // Starts before the edit are below `oldSpanEnd` already: carry on from the first one that is not.
+        var t = i
         while t < old.count, old[t] <= oldSpanEnd { t += 1 }
         while t < old.count { starts.append(old[t] + delta); t += 1 }
         return starts
+    }
+
+    /// Units read per `getCharacters` call by ``appendStarts(in:from:through:block:to:)``.
+    static let block = 1 << 16
+
+    /// Appends to `starts`, ascending, every offset `p` in `lo...hi` that begins a line of `s`: 0, and any
+    /// `p < s.length` whose preceding unit is a break (a `\r` followed by `\n` is not one; the empty line after
+    /// a final break owns no entry). The units are read `block` at a time with one unit of lookahead, never one
+    /// by one (`character(at:)` walks a text storage's NSBigMutableString tree on every call) and never as one
+    /// copy of the whole range (a 1 GB document's swap allocated and zeroed a 2 GB window).
+    static func appendStarts(in s: NSString, from lo: Int, through hi: Int, block: Int = block, to starts: inout [Int]) {
+        if lo == 0 { starts.append(0) }
+        let last = min(hi, s.length - 1)  // the last p that can start a line
+        var before = max(lo, 1) - 1  // the unit before the next p
+        guard before < last else { return }
+        let buffer = UnsafeMutablePointer<unichar>.allocate(capacity: block + 1)
+        defer { buffer.deallocate() }
+        while before < last {
+            let end = min(before + block, last)  // this pass decides p = before + 1 ... end
+            s.getCharacters(buffer, range: NSRange(location: before, length: end - before + 1))
+            appendBreaks(in: buffer, count: end - before, base: before + 1, to: &starts)
+            before = end
+        }
+    }
+
+    /// Appends `base + k` for every `k < count` whose unit ends a line (`units[k + 1]`, which must be readable,
+    /// tells a `\r` from a `\r\n`). Sixteen units at a time: a run of sixteen holding none of the five break
+    /// units, which is nearly every run of a text, is passed with a handful of vector comparisons, a 1 GB log's
+    /// whole scan in a fraction of the time a unit-by-unit loop takes.
+    private static func appendBreaks(in units: UnsafePointer<unichar>, count: Int, base: Int, to starts: inout [Int]) {
+        let raw = UnsafeRawPointer(units)
+        var k = 0
+        while k + 16 <= count {
+            let v = raw.loadUnaligned(fromByteOffset: k * 2, as: SIMD16<UInt16>.self)
+            let lineFeedOrReturn = (v .== SIMD16(repeating: 0x0A)) .| (v .== SIMD16(repeating: 0x0D))
+            let separators = (v .== SIMD16(repeating: 0x85)) .| (v .== SIMD16(repeating: 0x2028)) .| (v .== SIMD16(repeating: 0x2029))
+            if any(lineFeedOrReturn .| separators) {
+                for j in k..<(k + 16) where endsLine(units, j) { starts.append(base + j) }
+            }
+            k += 16
+        }
+        while k < count {
+            if endsLine(units, k) { starts.append(base + k) }
+            k += 1
+        }
+    }
+
+    /// Whether `units[k]` ends a line: `\n`, U+0085, U+2028, U+2029, or a `\r` that no `\n` follows.
+    @inline(__always)
+    private static func endsLine(_ units: UnsafePointer<unichar>, _ k: Int) -> Bool {
+        let c = units[k]
+        return c == 0x0A || c == 0x85 || c == 0x2028 || c == 0x2029 || (c == 0x0D && units[k + 1] != 0x0A)
     }
 }

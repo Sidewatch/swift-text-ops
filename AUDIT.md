@@ -87,3 +87,7 @@ Added, pinned by tests that fail without it:
 - 22 Sep 2026 (later) — `tables(in:)` and `table(_:settingCell:column:to:in:)` for a rendered preview's cell edits.
 - 9 Oct 2026 — `LineNumberMap` + `LineBreakScan` (git line ↔ editor line over lone CR / NEL / LS / PS), with the
   `NSString.getLineStart` oracle and the 20 MB guard (numbers above).
+- 27 Oct 2026 — `LineStartIndex` scans in 64 KB blocks, sixteen bytes a compare, instead of one window over the
+  whole range (the 1 GB open in Sidewatch went from 8.7 s to 1.5 s with the other fixes of that day); an independent
+  `rescanned()` reference, every block size from 1 to 33 and a lone break of each kind at every position pin it. 14
+  mutants, all caught.
