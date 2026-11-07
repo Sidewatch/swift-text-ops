@@ -127,9 +127,27 @@ public enum LineOps {
     /// sits flush left. The shared indent is the fewest leading spaces and tabs (counted as characters)
     /// among the non-blank lines; blank lines do not count, and one indented less than that is kept
     /// as it is. A `\r` left on CRLF lines is whitespace, so a blank CRLF line stays blank.
-    public static func dedent(_ lines: [String]) -> [String] {
-        let shared = lines.filter { !$0.allSatisfy(\.isWhitespace) }.map(leadingIndentCount).min() ?? 0
-        return lines.map { leadingIndentCount($0) >= shared ? String($0.dropFirst(shared)) : $0 }
+    ///
+    /// `startColumn` is for a selection: how far into its line the first line begins when only
+    /// indentation comes before it there, so that line counts as indented to it (a selection begun at
+    /// the first character of an indented line still loses the shared indent); nil when code comes
+    /// before it, so the first line neither sets the shared indent nor loses any. 0, the default, is a
+    /// whole first line.
+    public static func dedent(_ lines: [String], startColumn: Int? = 0) -> [String] {
+        var indents: [Int] = []
+        for (index, line) in lines.enumerated() where !line.allSatisfy(\.isWhitespace) {
+            if index > 0 {
+                indents.append(leadingIndentCount(line))
+            } else if let startColumn {
+                indents.append(startColumn + leadingIndentCount(line))
+            }
+        }
+        let shared = indents.min() ?? 0
+        return lines.enumerated().map { index, line in
+            // The first line already lacks the indentation before the selection's start.
+            let drop = index > 0 ? shared : startColumn.map { max(0, shared - $0) } ?? 0
+            return leadingIndentCount(line) >= drop ? String(line.dropFirst(drop)) : line
+        }
     }
 
     /// How many leading spaces and tabs `line` has.
