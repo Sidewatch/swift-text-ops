@@ -29,6 +29,16 @@ final class TextSearchTests: XCTestCase {
         XCTAssertEqual(TextSearch.ranges(of: "(", in: text, caseSensitive: false, regex: true), [], "an invalid pattern matches nothing")
     }
 
+    func testFindNextFromTheCaretSeesTheTextBeforeIt() {
+        // From the middle of a word, `\\b` and `^` are not satisfied by where the search began.
+        let text = "catcat\nimport a\n" as NSString
+        XCTAssertEqual(
+            TextSearch.next("\\bcat", from: 3, in: text, caseSensitive: true, regex: true), NSRange(location: 0, length: 3),
+            "the second `cat` follows a letter: the only match is the first, reached by wrapping")
+        XCTAssertEqual(TextSearch.next("^port", from: 9, in: text, caseSensitive: true, regex: true), nil)
+        XCTAssertEqual(TextSearch.next("(?<=im)port", from: 9, in: text, caseSensitive: true, regex: true), NSRange(location: 9, length: 4))
+    }
+
     func testAZeroWidthRegexMatchesNothingAnywhere() {
         let text = "ab" as NSString
         XCTAssertEqual(TextSearch.ranges(of: "x*", in: text, caseSensitive: false, regex: true), [])

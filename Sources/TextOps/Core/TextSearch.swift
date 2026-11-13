@@ -134,7 +134,12 @@ public enum TextSearch {
     /// The first non-empty match of `expression` starting at or after `start`.
     private static func firstMatch(_ expression: NSRegularExpression, in text: NSString, from start: Int) -> NSRange? {
         var found: NSRange?
-        expression.enumerateMatches(in: text as String, range: NSRange(location: start, length: text.length - start)) { match, _, stop in
+        // The range starts at the caret, not at the text's start: its edge is not a line start or
+        // a word boundary, and a lookbehind sees what stands before it, as a search of the whole
+        // text would have it.
+        let range = NSRange(location: start, length: text.length - start)
+        expression.enumerateMatches(in: text as String, options: [.withTransparentBounds, .withoutAnchoringBounds], range: range) {
+            match, _, stop in
             if let match, match.range.length > 0 {
                 found = match.range
                 stop.pointee = true

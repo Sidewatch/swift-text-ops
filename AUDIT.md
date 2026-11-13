@@ -91,3 +91,4 @@ Added, pinned by tests that fail without it:
   whole range (the 1 GB open in Sidewatch went from 8.7 s to 1.5 s with the other fixes of that day); an independent
   `rescanned()` reference, every block size from 1 to 33 and a lone break of each kind at every position pin it. 14
   mutants, all caught.
+- 13 Nov 2026 — review. Fixed: `TextSearch.next` in regex mode searched from the caret with anchoring, opaque bounds, so `\bcat` matched the second half of `catcat` and `^` matched at the caret; the search runs with transparent, non-anchoring bounds. `testFindNextFromTheCaretSeesTheTextBeforeIt` fails on the code before.
